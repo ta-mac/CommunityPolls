@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "483288642555",
+    "project_id": "communitypoll-dcbfc",
+    "storage_bucket": "communitypoll-dcbfc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483288642555:android:819e29218d7b614d31515e",
+        "android_client_info": {
+          "package_name": "com.example.communitypolls"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-DJTkvA7cJwVAPIttQteesTJapUBWgS4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
