@@ -44,6 +44,7 @@ class PollVoteViewModel(
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         val option = _ui.value.selectedOptionId
         val p = _ui.value.poll
+
         if (uid == null) {
             _ui.value = _ui.value.copy(error = "Please sign in to vote.")
             return
@@ -52,7 +53,9 @@ class PollVoteViewModel(
             _ui.value = _ui.value.copy(error = "Select an option.")
             return
         }
-        if (!p.isActive) {
+        // Client-side guard that mirrors security rules
+        val now = System.currentTimeMillis()
+        if (!p.isActive || (p.closesAt != null && p.closesAt!! <= now)) {
             _ui.value = _ui.value.copy(error = "This poll is closed.")
             return
         }

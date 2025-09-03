@@ -1,26 +1,15 @@
 package com.example.communitypolls.ui.polls
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -43,6 +32,17 @@ fun PollResultsRoute(
         }
     )
     val ui by vm.ui.collectAsState()
+    val context = LocalContext.current
+
+    fun buildCsv(): String {
+        val title = ui.poll?.title ?: "Poll"
+        val header = "Option,Votes,Percent\n"
+        val rows = ui.results.joinToString("\n") { r ->
+            val pct = (r.pct * 100).toInt()
+            "\"${r.label.replace("\"","\"\"")}\",${r.count},$pct%"
+        }
+        return "Title,\"$title\"\nTotal Votes,${ui.total}\n\n$header$rows\n"
+    }
 
     Scaffold(
         topBar = {
@@ -76,6 +76,36 @@ fun PollResultsRoute(
                 }
                 Text("Total votes: ${ui.total}", style = MaterialTheme.typography.labelLarge)
 
+                // Export actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val csv = buildCsv()
+                            val cm = context.getSystemService(ClipboardManager::class.java)
+                            cm.setPrimaryClip(ClipData.newPlainText("poll_results.csv", csv))
+                            Toast.makeText(context, "CSV copied to clipboard", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Copy CSV") }
+
+                    Button(
+                        onClick = {
+                            val csv = buildCsv()
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/csv"
+                                putExtra(Intent.EXTRA_SUBJECT, "Poll Results - ${ui.poll!!.title}")
+                                putExtra(Intent.EXTRA_TEXT, csv)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share CSV"))
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Share CSV") }
+                }
+
+                // Bars
                 ui.results.forEach { r ->
                     Column(Modifier.fillMaxWidth()) {
                         Row(

@@ -12,6 +12,7 @@ import com.example.communitypolls.ui.screens.*
 import com.example.communitypolls.ui.polls.PollEditorRoute
 import com.example.communitypolls.ui.polls.PollVoteRoute
 import com.example.communitypolls.ui.polls.PollResultsRoute
+import com.example.communitypolls.ui.polls.PollEditRoute
 
 sealed class Route(val route: String) {
     object Welcome : Route("welcome")
@@ -23,6 +24,7 @@ sealed class Route(val route: String) {
     object PollCreate : Route("poll_create")
     object PollVote : Route("poll_vote/{pollId}")
     object PollResults : Route("poll_results/{pollId}")
+    object PollEdit : Route("poll_edit/{pollId}")
 }
 
 @Composable
@@ -91,7 +93,8 @@ fun AppNav() {
                     vm.signOut()
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
                 },
-                onPollClick = { id -> nav.navigate("poll_vote/$id") }
+                onPollClick = { id -> nav.navigate("poll_vote/$id") },
+                onEditPoll = { id -> nav.navigate("poll_edit/$id") }
             )
         }
 
@@ -113,7 +116,7 @@ fun AppNav() {
             PollVoteRoute(
                 pollId = pollId,
                 onClose = { nav.popBackStack() },
-                onViewResults = { nav.navigate("poll_results/$pollId") } // NEW
+                onViewResults = { nav.navigate("poll_results/$pollId") }
             )
         }
 
@@ -123,6 +126,16 @@ fun AppNav() {
             PollResultsRoute(
                 pollId = pollId,
                 onClose = { nav.popBackStack() }
+            )
+        }
+
+        // Edit Poll (admin)
+        composable(Route.PollEdit.route) { backStackEntry ->
+            val pollId = backStackEntry.arguments?.getString("pollId") ?: return@composable
+            PollEditRoute(
+                pollId = pollId,
+                onSaved = { nav.popBackStack() },
+                onCancel = { nav.popBackStack() }
             )
         }
     }

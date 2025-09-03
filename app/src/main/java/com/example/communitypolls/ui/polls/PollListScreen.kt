@@ -20,7 +20,11 @@ import com.example.communitypolls.model.Poll
 @Composable
 fun PollListRoute(
     onPollClick: (String) -> Unit = {},
-    limit: Int = 50
+    limit: Int = 50,
+    // NEW: show admin action buttons (Edit/Delete) on each card
+    showAdminActions: Boolean = false,
+    onEditPoll: (String) -> Unit = {},
+    onDeletePoll: (String) -> Unit = {}
 ) {
     val vm: PollListViewModel = viewModel(factory = PollVmFactory(limit))
     val state by vm.state.collectAsState()
@@ -28,7 +32,10 @@ fun PollListRoute(
     PollListScreen(
         state = state,
         onRetry = { vm.refresh() },
-        onPollClick = onPollClick
+        onPollClick = onPollClick,
+        showAdminActions = showAdminActions,
+        onEditPoll = onEditPoll,
+        onDeletePoll = onDeletePoll
     )
 }
 
@@ -37,12 +44,21 @@ fun PollListRoute(
 fun PollListScreen(
     state: PollListUiState,
     onRetry: () -> Unit,
-    onPollClick: (String) -> Unit
+    onPollClick: (String) -> Unit,
+    showAdminActions: Boolean,
+    onEditPoll: (String) -> Unit,
+    onDeletePoll: (String) -> Unit
 ) {
     when {
         state.loading -> LoadingState()
         state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
-        else -> PollList(items = state.items, onPollClick = onPollClick)
+        else -> PollList(
+            items = state.items,
+            onPollClick = onPollClick,
+            showAdminActions = showAdminActions,
+            onEditPoll = onEditPoll,
+            onDeletePoll = onDeletePoll
+        )
     }
 }
 
@@ -78,14 +94,23 @@ private fun ErrorState(
 @Composable
 private fun PollList(
     items: List<Poll>,
-    onPollClick: (String) -> Unit
+    onPollClick: (String) -> Unit,
+    showAdminActions: Boolean,
+    onEditPoll: (String) -> Unit,
+    onDeletePoll: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp),
     ) {
         items(items, key = { it.id }) { poll ->
-            PollItemCard(poll = poll, onClick = { onPollClick(poll.id) })
+            PollItemCard(
+                poll = poll,
+                onClick = { onPollClick(poll.id) },
+                showAdminActions = showAdminActions,
+                onEdit = { onEditPoll(poll.id) },
+                onDelete = { onDeletePoll(poll.id) }
+            )
             Divider()
         }
     }
@@ -94,7 +119,10 @@ private fun PollList(
 @Composable
 private fun PollItemCard(
     poll: Poll,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    showAdminActions: Boolean,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     val subtitle = remember(poll.description) {
         poll.description.ifBlank { "No description" }
@@ -127,6 +155,17 @@ private fun PollItemCard(
                 "$optionsSummary • $statusText",
                 style = MaterialTheme.typography.labelMedium
             )
+
+            if (showAdminActions) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
+                    OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Delete") }
+                }
+            }
         }
     }
 }

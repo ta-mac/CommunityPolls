@@ -3,29 +3,13 @@ package com.example.communitypolls.ui.polls
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -33,22 +17,26 @@ import androidx.compose.ui.window.DialogProperties
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PollEditorScreen(
-    state: PollEditorState,
+    state: PollEditorUiState,
     onTitleChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onOptionIdChange: (index: Int, value: String) -> Unit,
     onOptionTextChange: (index: Int, value: String) -> Unit,
     onAddOption: () -> Unit,
     onRemoveOption: (index: Int) -> Unit,
+    onToggleActive: (Boolean) -> Unit,
+    onSelectClosePreset: (Long?) -> Unit,
     onSave: () -> Unit,
     onDismissError: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    screenTitle: String = "Create Poll",
+    primaryButtonText: String = "Save"
 ) {
     val scroll = rememberScrollState()
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Create Poll") },
+            title = { Text(screenTitle) },
             colors = TopAppBarDefaults.topAppBarColors()
         )
 
@@ -67,46 +55,68 @@ fun PollEditorScreen(
                 onValueChange = onTitleChange,
                 label = { Text("Title") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Next
-                ),
                 modifier = Modifier.fillMaxWidth()
             )
+
             Spacer(Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = state.description,
                 onValueChange = onDescriptionChange,
                 label = { Text("Description (optional)") },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences
-                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
+
             Text("Options", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
 
             state.options.forEachIndexed { index, opt ->
-                OptionCard(
-                    index = index,
-                    id = opt.id,
-                    text = opt.text,
+                PollEditorOptionRow(
+                    option = opt,
+                    canRemove = state.options.size > 2,
                     onIdChange = { onOptionIdChange(index, it) },
                     onTextChange = { onOptionTextChange(index, it) },
-                    onRemove = { onRemoveOption(index) },
-                    canRemove = state.options.size > 2
+                    onRemove = { onRemoveOption(index) }
                 )
                 Spacer(Modifier.height(8.dp))
             }
 
-            OutlinedButton(onClick = onAddOption) {
-                Text("Add option")
+            OutlinedButton(onClick = onAddOption) { Text("Add option") }
+
+            Spacer(Modifier.height(24.dp))
+
+            Text("Status & Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+
+            // Active switch
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Active", modifier = Modifier.weight(1f))
+                Switch(checked = state.isActive, onCheckedChange = onToggleActive)
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(12.dp))
+
+            Text("Closes", style = MaterialTheme.typography.labelLarge)
+            Spacer(Modifier.height(6.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = { onSelectClosePreset(null) }) { Text("No close") }
+                OutlinedButton(onClick = { onSelectClosePreset(6) }) { Text("6h") }
+                OutlinedButton(onClick = { onSelectClosePreset(24) }) { Text("1d") }
+                OutlinedButton(onClick = { onSelectClosePreset(72) }) { Text("3d") }
+                OutlinedButton(onClick = { onSelectClosePreset(168) }) { Text("7d") }
+            }
+
+            val closeLabel =
+                if (state.closesAt == null) "No closing time"
+                else "Closes at: " + java.text.DateFormat.getDateTimeInstance()
+                    .format(java.util.Date(state.closesAt))
+            Spacer(Modifier.height(6.dp))
+            Text(closeLabel, style = MaterialTheme.typography.bodySmall)
         }
 
         Row(
@@ -126,7 +136,7 @@ fun PollEditorScreen(
             Button(
                 onClick = onSave,
                 enabled = !state.loading
-            ) { Text("Save") }
+            ) { Text(primaryButtonText) }
         }
     }
 
@@ -140,12 +150,12 @@ fun PollEditorScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Problem saving", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                    Text("Problem saving", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     Text(state.error)
                     Spacer(Modifier.height(16.dp))
-                    Button(onClick = onDismissError, modifier = Modifier.align(Alignment.End)) {
-                        Text("OK")
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        Button(onClick = onDismissError) { Text("OK") }
                     }
                 }
             }
@@ -153,44 +163,38 @@ fun PollEditorScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun OptionCard(
-    index: Int,
-    id: String,
-    text: String,
+private fun PollEditorOptionRow(
+    option: PollEditorOption,
+    canRemove: Boolean,
     onIdChange: (String) -> Unit,
     onTextChange: (String) -> Unit,
-    onRemove: () -> Unit,
-    canRemove: Boolean
+    onRemove: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors()
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = id,
-                    onValueChange = onIdChange,
-                    label = { Text("Option id #${index + 1}") },
-                    singleLine = true,
-                    modifier = Modifier.weight(0.4f)
-                )
-                Spacer(Modifier.width(12.dp))
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = onTextChange,
-                    label = { Text("Text") },
-                    singleLine = true,
-                    modifier = Modifier.weight(0.6f)
-                )
-                if (canRemove) {
-                    Spacer(Modifier.width(8.dp))
-                    IconButton(onClick = onRemove) {
-                        Icon(Icons.Filled.Delete, contentDescription = "Remove option")
-                    }
-                }
+        OutlinedTextField(
+            value = option.id,
+            onValueChange = onIdChange,
+            label = { Text("Id") },
+            singleLine = true,
+            modifier = Modifier.weight(0.4f)
+        )
+        Spacer(Modifier.width(8.dp))
+        OutlinedTextField(
+            value = option.text,
+            onValueChange = onTextChange,
+            label = { Text("Text") },
+            singleLine = true,
+            modifier = Modifier.weight(0.6f)
+        )
+        if (canRemove) {
+            Spacer(Modifier.width(8.dp))
+            IconButton(onClick = onRemove) {
+                Icon(Icons.Filled.Delete, contentDescription = "Remove option")
             }
         }
     }
