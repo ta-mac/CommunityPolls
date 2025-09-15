@@ -15,11 +15,8 @@ fun PollEditorRoute(
     val vm: PollEditorViewModel = viewModel(factory = PollEditorVmFactory())
     val state by vm.state.collectAsState()
 
-    LaunchedEffect(state.loading) {
-        // When we transition from loading->not loading with no error, assume success
-        if (!state.loading && state.error == null) {
-            onSaved("")
-        }
+    LaunchedEffect(state.savedId) {
+        state.savedId?.let { onSaved(it) }
     }
 
     PollEditorScreen(
@@ -33,8 +30,6 @@ fun PollEditorRoute(
         onToggleActive = vm::setActive,
         onSelectClosePreset = vm::setCloseAfterHours,
         onSave = { vm.save(createdByUid) },
-        // Cancel vs error-dismiss share the same callback in the screen.
-        // If there's an error showing, just clear it; otherwise treat as "Cancel".
         onDismissError = {
             if (state.error != null) vm.clearError() else onCancel()
         }

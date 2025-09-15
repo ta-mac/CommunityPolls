@@ -2,11 +2,7 @@ package com.example.communitypolls.ui.polls
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +17,7 @@ import com.example.communitypolls.ui.ServiceLocator
 fun PollVoteRoute(
     pollId: String,
     onClose: () -> Unit,
-    onViewResults: (String) -> Unit = {} // NEW
+    onViewResults: (String) -> Unit = {}
 ) {
     val repo = ServiceLocator.pollRepository
     val vm: PollVoteViewModel = viewModel(
@@ -70,7 +66,7 @@ fun PollVoteRoute(
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
                 if (ui.error != null) {
                     Text(ui.error!!, color = MaterialTheme.colorScheme.error)
@@ -78,7 +74,7 @@ fun PollVoteRoute(
                 }
 
                 Button(
-                    onClick = vm::submit,
+                    onClick = { vm.submit() },
                     enabled = !ui.submitting && ui.selectedOptionId != null && (ui.poll?.isActive == true),
                     modifier = Modifier.fillMaxWidth()
                 ) {

@@ -11,181 +11,113 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PollEditorScreen(
-    state: PollEditorUiState,
+    state: PollEditorState,
     onTitleChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
-    onOptionIdChange: (index: Int, value: String) -> Unit,
-    onOptionTextChange: (index: Int, value: String) -> Unit,
+    onOptionIdChange: (Int, String) -> Unit,
+    onOptionTextChange: (Int, String) -> Unit,
     onAddOption: () -> Unit,
-    onRemoveOption: (index: Int) -> Unit,
+    onRemoveOption: (Int) -> Unit,
     onToggleActive: (Boolean) -> Unit,
-    onSelectClosePreset: (Long?) -> Unit,
+    onSelectClosePreset: (Int?) -> Unit,
     onSave: () -> Unit,
     onDismissError: () -> Unit,
-    modifier: Modifier = Modifier,
-    screenTitle: String = "Create Poll",
-    primaryButtonText: String = "Save"
 ) {
-    val scroll = rememberScrollState()
-
-    Column(modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(screenTitle) },
-            colors = TopAppBarDefaults.topAppBarColors()
+    if (state.error != null) {
+        AlertDialog(
+            onDismissRequest = onDismissError,
+            confirmButton = { TextButton(onClick = onDismissError) { Text("OK") } },
+            title = { Text("Problem saving") },
+            text = { Text(state.error) }
         )
-
-        if (state.loading) {
-            LinearProgressIndicator(Modifier.fillMaxWidth())
-        }
-
-        Column(
-            Modifier
-                .weight(1f)
-                .verticalScroll(scroll)
-                .padding(16.dp)
-        ) {
-            OutlinedTextField(
-                value = state.title,
-                onValueChange = onTitleChange,
-                label = { Text("Title") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = state.description,
-                onValueChange = onDescriptionChange,
-                label = { Text("Description (optional)") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text("Options", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-
-            state.options.forEachIndexed { index, opt ->
-                PollEditorOptionRow(
-                    option = opt,
-                    canRemove = state.options.size > 2,
-                    onIdChange = { onOptionIdChange(index, it) },
-                    onTextChange = { onOptionTextChange(index, it) },
-                    onRemove = { onRemoveOption(index) }
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-
-            OutlinedButton(onClick = onAddOption) { Text("Add option") }
-
-            Spacer(Modifier.height(24.dp))
-
-            Text("Status & Schedule", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-
-            // Active switch
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Active", modifier = Modifier.weight(1f))
-                Switch(checked = state.isActive, onCheckedChange = onToggleActive)
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Text("Closes", style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.height(6.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(onClick = { onSelectClosePreset(null) }) { Text("No close") }
-                OutlinedButton(onClick = { onSelectClosePreset(6) }) { Text("6h") }
-                OutlinedButton(onClick = { onSelectClosePreset(24) }) { Text("1d") }
-                OutlinedButton(onClick = { onSelectClosePreset(72) }) { Text("3d") }
-                OutlinedButton(onClick = { onSelectClosePreset(168) }) { Text("7d") }
-            }
-
-            val closeLabel =
-                if (state.closesAt == null) "No closing time"
-                else "Closes at: " + java.text.DateFormat.getDateTimeInstance()
-                    .format(java.util.Date(state.closesAt))
-            Spacer(Modifier.height(6.dp))
-            Text(closeLabel, style = MaterialTheme.typography.bodySmall)
-        }
-
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TextButton(
-                onClick = onDismissError,
-                enabled = !state.loading
-            ) { Text("Cancel") }
-
-            Spacer(Modifier.weight(1f))
-
-            Button(
-                onClick = onSave,
-                enabled = !state.loading
-            ) { Text(primaryButtonText) }
-        }
     }
 
-    if (state.error != null) {
-        Dialog(
-            onDismissRequest = onDismissError,
-            properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = true)
-        ) {
-            Card(
-                colors = CardDefaults.cardColors(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("Problem saving", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    Text(state.error)
-                    Spacer(Modifier.height(16.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        Button(onClick = onDismissError) { Text("OK") }
-                    }
-                }
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Create Poll", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+
+        OutlinedTextField(
+            value = state.title,
+            onValueChange = onTitleChange,
+            label = { Text("Title") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        OutlinedTextField(
+            value = state.description,
+            onValueChange = onDescriptionChange,
+            label = { Text("Description (optional)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Text("Options", style = MaterialTheme.typography.titleMedium)
+        state.options.forEachIndexed { idx, option ->
+            OptionRow(
+                index = idx,
+                id = option.id,
+                text = option.text,
+                canRemove = state.options.size > 2,
+                onIdChange = { onOptionIdChange(idx, it) },
+                onTextChange = { onOptionTextChange(idx, it) },
+                onRemove = { onRemoveOption(idx) }
+            )
+            Spacer(Modifier.height(8.dp))
+        }
+
+        TextButton(onClick = onAddOption) { Text("Add option") }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Active")
+            Spacer(Modifier.width(12.dp))
+            Switch(checked = state.isActive, onCheckedChange = onToggleActive)
+        }
+
+        Text("Auto close")
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = state.closeAfterHours == null, onClick = { onSelectClosePreset(null) }, label = { Text("Never") })
+            FilterChip(selected = state.closeAfterHours == 1, onClick = { onSelectClosePreset(1) }, label = { Text("1h") })
+            FilterChip(selected = state.closeAfterHours == 24, onClick = { onSelectClosePreset(24) }, label = { Text("24h") })
+            FilterChip(selected = state.closeAfterHours == 72, onClick = { onSelectClosePreset(72) }, label = { Text("3d") })
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Button(onClick = onSave, enabled = !state.loading) {
+            Text(if (state.loading) "Saving…" else "Save")
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PollEditorOptionRow(
-    option: PollEditorOption,
+private fun OptionRow(
+    index: Int,
+    id: String,
+    text: String,
     canRemove: Boolean,
     onIdChange: (String) -> Unit,
     onTextChange: (String) -> Unit,
     onRemove: () -> Unit
 ) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
-            value = option.id,
+            value = id,
             onValueChange = onIdChange,
-            label = { Text("Id") },
+            label = { Text("ID") },
             singleLine = true,
             modifier = Modifier.weight(0.4f)
         )
         Spacer(Modifier.width(8.dp))
         OutlinedTextField(
-            value = option.text,
+            value = text,
             onValueChange = onTextChange,
             label = { Text("Text") },
             singleLine = true,

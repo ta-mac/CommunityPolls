@@ -1,6 +1,9 @@
 package com.example.communitypolls.ui.polls
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -22,10 +25,10 @@ fun PollEditRoute(
         }
     )
     val state by vm.state.collectAsState()
-    val saved by vm.saved.collectAsState()
 
-    LaunchedEffect(saved) {
-        if (saved) onSaved()
+    // When update succeeds we set savedId, then pop back
+    LaunchedEffect(state.savedId) {
+        if (state.savedId != null) onSaved()
     }
 
     PollEditorScreen(
@@ -37,12 +40,10 @@ fun PollEditRoute(
         onAddOption = vm::addOption,
         onRemoveOption = vm::removeOption,
         onToggleActive = vm::setActive,
-        onSelectClosePreset = vm::setCloseAfterHours,
+        onSelectClosePreset = vm::setCloseAfterHours, // (Int?) -> Unit
         onSave = { vm.save() },
         onDismissError = {
             if (state.error != null) vm.clearError() else onCancel()
-        },
-        screenTitle = "Edit Poll",
-        primaryButtonText = "Update"
+        }
     )
 }
