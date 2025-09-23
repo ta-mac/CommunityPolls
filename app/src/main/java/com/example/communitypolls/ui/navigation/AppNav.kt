@@ -17,7 +17,8 @@ import com.example.communitypolls.ui.polls.PollEditorRoute
 import com.example.communitypolls.ui.polls.PollResultsRoute
 import com.example.communitypolls.ui.polls.PollVoteRoute
 import com.example.communitypolls.ui.screens.*
-import com.example.communitypolls.ui.sugg.SuggestPollRoute// << your route lives under ui/polls
+import com.example.communitypolls.ui.sugg.SuggestPollRoute
+import com.example.communitypolls.ui.sugg.AdminSuggRoute
 
 sealed class Route(val route: String) {
     object Welcome : Route("welcome")
@@ -30,7 +31,8 @@ sealed class Route(val route: String) {
     object PollVote : Route("poll_vote/{pollId}")
     object PollResults : Route("poll_results/{pollId}")
     object PollEdit : Route("poll_edit/{pollId}")
-    object Suggest : Route("suggest") // NEW
+    object Suggest : Route("suggest")
+    object SuggestionsAdmin : Route("suggestions_admin")
 }
 
 @Composable
@@ -81,7 +83,7 @@ fun AppNav() {
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
                 },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
-                onSuggestClick = { nav.navigate(Route.Suggest.route) } // NEW
+                onSuggestClick = { nav.navigate(Route.Suggest.route) }
             )
         }
 
@@ -92,7 +94,7 @@ fun AppNav() {
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
                 },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
-                onSuggestClick = { nav.navigate(Route.Suggest.route) } // NEW
+                onSuggestClick = { nav.navigate(Route.Suggest.route) }
             )
         }
 
@@ -110,7 +112,7 @@ fun AppNav() {
                 },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
                 onEditPoll = { id -> nav.navigate("poll_edit/$id") },
-                onSuggestClick = { nav.navigate(Route.Suggest.route) } // NEW
+                onSuggestClick = { nav.navigate(Route.SuggestionsAdmin.route) } // <-- admin goes to review list
             )
         }
 
@@ -155,12 +157,17 @@ fun AppNav() {
             )
         }
 
-        // NEW: Suggest a Poll
+        // Suggest a Poll (users/guests)
         composable(Route.Suggest.route) {
             SuggestPollRoute(
                 onSubmitted = { nav.popBackStack() },
                 onCancel = { nav.popBackStack() }
             )
+        }
+
+        // Admin: review suggestions
+        composable(Route.SuggestionsAdmin.route) {
+            AdminSuggRoute(onClose = { nav.popBackStack() })
         }
     }
 }

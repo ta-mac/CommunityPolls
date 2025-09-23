@@ -22,6 +22,7 @@ class SuggestPollViewModel(
     private val repo: SuggestionRepository,
     private val createdByUid: String,
     initialNameOrEmail: String
+
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SuggestPollState(yourNameOrEmail = initialNameOrEmail))

@@ -38,12 +38,12 @@ private fun HomeScaffold(
 fun HomeGuestScreen(
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
-    onSuggestClick: () -> Unit // NEW
+    onSuggestClick: () -> Unit
 ) {
     HomeScaffold(
         title = "Community Polls",
         onSignOut = onSignOut,
-        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } } // NEW
+        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } }
     ) {
         PollListRoute(onPollClick = onPollClick, showAdminActions = false)
     }
@@ -55,12 +55,12 @@ fun HomeGuestScreen(
 fun HomeUserScreen(
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
-    onSuggestClick: () -> Unit // NEW
+    onSuggestClick: () -> Unit
 ) {
     HomeScaffold(
         title = "Community Polls",
         onSignOut = onSignOut,
-        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } } // NEW
+        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } }
     ) {
         PollListRoute(onPollClick = onPollClick, showAdminActions = false)
     }
@@ -74,7 +74,7 @@ fun HomeAdminScreen(
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
     onEditPoll: (String) -> Unit,
-    onSuggestClick: () -> Unit // NEW
+    onSuggestClick: () -> Unit // for admin, this opens the review list
 ) {
     val repo = ServiceLocator.pollRepository
     val scope = rememberCoroutineScope()
@@ -86,7 +86,7 @@ fun HomeAdminScreen(
         title = "Admin • Community Polls",
         onSignOut = onSignOut,
         actions = {
-            Button(onClick = onSuggestClick) { Text("Suggest a poll") } // NEW
+            Button(onClick = onSuggestClick) { Text("User Poll") } // label changed for admin
             Button(onClick = onCreatePoll) { Text("Create poll") }
         }
     ) {
