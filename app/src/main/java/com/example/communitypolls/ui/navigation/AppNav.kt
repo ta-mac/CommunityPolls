@@ -17,6 +17,7 @@ import com.example.communitypolls.ui.polls.PollEditorRoute
 import com.example.communitypolls.ui.polls.PollResultsRoute
 import com.example.communitypolls.ui.polls.PollVoteRoute
 import com.example.communitypolls.ui.screens.*
+import com.example.communitypolls.ui.sugg.SuggestPollRoute// << your route lives under ui/polls
 
 sealed class Route(val route: String) {
     object Welcome : Route("welcome")
@@ -29,6 +30,7 @@ sealed class Route(val route: String) {
     object PollVote : Route("poll_vote/{pollId}")
     object PollResults : Route("poll_results/{pollId}")
     object PollEdit : Route("poll_edit/{pollId}")
+    object Suggest : Route("suggest") // NEW
 }
 
 @Composable
@@ -78,7 +80,8 @@ fun AppNav() {
                     authVm.signOut()
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
                 },
-                onPollClick = { id -> nav.navigate("poll_vote/$id") }
+                onPollClick = { id -> nav.navigate("poll_vote/$id") },
+                onSuggestClick = { nav.navigate(Route.Suggest.route) } // NEW
             )
         }
 
@@ -88,7 +91,8 @@ fun AppNav() {
                     authVm.signOut()
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
                 },
-                onPollClick = { id -> nav.navigate("poll_vote/$id") }
+                onPollClick = { id -> nav.navigate("poll_vote/$id") },
+                onSuggestClick = { nav.navigate(Route.Suggest.route) } // NEW
             )
         }
 
@@ -105,11 +109,12 @@ fun AppNav() {
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
                 },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
-                onEditPoll = { id -> nav.navigate("poll_edit/$id") }
+                onEditPoll = { id -> nav.navigate("poll_edit/$id") },
+                onSuggestClick = { nav.navigate(Route.Suggest.route) } // NEW
             )
         }
 
-        // Create Poll (admin only) — WAIT for user, don't pop when user==null
+        // Create Poll (admin only)
         composable(Route.PollCreate.route) {
             when (val u = user) {
                 null -> Box(Modifier.fillMaxSize()) { CircularProgressIndicator() }
@@ -146,6 +151,14 @@ fun AppNav() {
             PollEditRoute(
                 pollId = pollId,
                 onSaved = { nav.popBackStack() },
+                onCancel = { nav.popBackStack() }
+            )
+        }
+
+        // NEW: Suggest a Poll
+        composable(Route.Suggest.route) {
+            SuggestPollRoute(
+                onSubmitted = { nav.popBackStack() },
                 onCancel = { nav.popBackStack() }
             )
         }

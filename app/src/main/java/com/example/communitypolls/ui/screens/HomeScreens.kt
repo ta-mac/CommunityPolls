@@ -37,9 +37,14 @@ private fun HomeScaffold(
 @Composable
 fun HomeGuestScreen(
     onSignOut: () -> Unit,
-    onPollClick: (String) -> Unit
+    onPollClick: (String) -> Unit,
+    onSuggestClick: () -> Unit // NEW
 ) {
-    HomeScaffold(title = "Community Polls", onSignOut = onSignOut) {
+    HomeScaffold(
+        title = "Community Polls",
+        onSignOut = onSignOut,
+        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } } // NEW
+    ) {
         PollListRoute(onPollClick = onPollClick, showAdminActions = false)
     }
 }
@@ -49,9 +54,14 @@ fun HomeGuestScreen(
 @Composable
 fun HomeUserScreen(
     onSignOut: () -> Unit,
-    onPollClick: (String) -> Unit
+    onPollClick: (String) -> Unit,
+    onSuggestClick: () -> Unit // NEW
 ) {
-    HomeScaffold(title = "Community Polls", onSignOut = onSignOut) {
+    HomeScaffold(
+        title = "Community Polls",
+        onSignOut = onSignOut,
+        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } } // NEW
+    ) {
         PollListRoute(onPollClick = onPollClick, showAdminActions = false)
     }
 }
@@ -63,7 +73,8 @@ fun HomeAdminScreen(
     onCreatePoll: () -> Unit,
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
-    onEditPoll: (String) -> Unit
+    onEditPoll: (String) -> Unit,
+    onSuggestClick: () -> Unit // NEW
 ) {
     val repo = ServiceLocator.pollRepository
     val scope = rememberCoroutineScope()
@@ -74,7 +85,10 @@ fun HomeAdminScreen(
     HomeScaffold(
         title = "Admin • Community Polls",
         onSignOut = onSignOut,
-        actions = { Button(onClick = onCreatePoll) { Text("Create poll") } }
+        actions = {
+            Button(onClick = onSuggestClick) { Text("Suggest a poll") } // NEW
+            Button(onClick = onCreatePoll) { Text("Create poll") }
+        }
     ) {
         PollListRoute(
             onPollClick = onPollClick,
@@ -84,7 +98,6 @@ fun HomeAdminScreen(
         )
     }
 
-    // Confirm delete dialog
     if (pendingDeleteId != null) {
         AlertDialog(
             onDismissRequest = { if (!deleting) pendingDeleteId = null },
@@ -96,7 +109,6 @@ fun HomeAdminScreen(
                         scope.launch {
                             deleting = true
                             try {
-                                // Perform delete; ignore returned result for now
                                 repo.deletePoll(id)
                                 pendingDeleteId = null
                             } finally {
