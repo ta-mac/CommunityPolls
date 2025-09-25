@@ -1,12 +1,16 @@
 package com.example.communitypolls.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.communitypolls.ui.polls.PollListRoute
 import com.example.communitypolls.ui.ServiceLocator
+import com.example.communitypolls.ui.polls.PollListRoute
+import com.example.communitypolls.ui.polls.PollSort
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,6 +36,35 @@ private fun HomeScaffold(
     ) { padding -> Box(Modifier.padding(padding).fillMaxSize()) { content() } }
 }
 
+/* ------------------------------- Sort menu ------------------------------- */
+
+@Composable
+private fun SortMenu(
+    sort: PollSort,
+    onChange: (PollSort) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.Sort, contentDescription = "Sort")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            @Composable
+            fun item(label: String, value: PollSort) {
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { expanded = false; onChange(value) },
+                    trailingIcon = { if (sort == value) Text("•") else null }
+                )
+            }
+            item("Newest", PollSort.NEWEST)
+            item("Oldest", PollSort.OLDEST)
+            item("A → Z",  PollSort.TITLE_AZ)
+            item("Z → A",  PollSort.TITLE_ZA)
+        }
+    }
+}
+
 /* ------------------------------- Guest ------------------------------- */
 
 @Composable
@@ -40,12 +73,21 @@ fun HomeGuestScreen(
     onPollClick: (String) -> Unit,
     onSuggestClick: () -> Unit
 ) {
+    var sort by remember { mutableStateOf(PollSort.NEWEST) }
+
     HomeScaffold(
         title = "Community Polls",
         onSignOut = onSignOut,
-        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } }
+        actions = {
+            Button(onClick = onSuggestClick) { Text("Suggest a poll") }
+            SortMenu(sort = sort, onChange = { sort = it })
+        }
     ) {
-        PollListRoute(onPollClick = onPollClick, showAdminActions = false)
+        PollListRoute(
+            onPollClick = onPollClick,
+            showAdminActions = false,
+            sort = sort
+        )
     }
 }
 
@@ -57,12 +99,21 @@ fun HomeUserScreen(
     onPollClick: (String) -> Unit,
     onSuggestClick: () -> Unit
 ) {
+    var sort by remember { mutableStateOf(PollSort.NEWEST) }
+
     HomeScaffold(
         title = "Community Polls",
         onSignOut = onSignOut,
-        actions = { Button(onClick = onSuggestClick) { Text("Suggest a poll") } }
+        actions = {
+            Button(onClick = onSuggestClick) { Text("Suggest a poll") }
+            SortMenu(sort = sort, onChange = { sort = it })
+        }
     ) {
-        PollListRoute(onPollClick = onPollClick, showAdminActions = false)
+        PollListRoute(
+            onPollClick = onPollClick,
+            showAdminActions = false,
+            sort = sort
+        )
     }
 }
 
@@ -74,10 +125,11 @@ fun HomeAdminScreen(
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
     onEditPoll: (String) -> Unit,
-    onSuggestClick: () -> Unit // for admin, this opens the review list
+    onSuggestClick: () -> Unit // opens the review list
 ) {
     val repo = ServiceLocator.pollRepository
     val scope = rememberCoroutineScope()
+    var sort by remember { mutableStateOf(PollSort.NEWEST) }
 
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf(false) }
@@ -86,15 +138,17 @@ fun HomeAdminScreen(
         title = "Admin • Community Polls",
         onSignOut = onSignOut,
         actions = {
-            Button(onClick = onSuggestClick) { Text("User Poll") } // label changed for admin
+            Button(onClick = onSuggestClick) { Text("User Poll") }
             Button(onClick = onCreatePoll) { Text("Create poll") }
+            SortMenu(sort = sort, onChange = { sort = it })
         }
     ) {
         PollListRoute(
             onPollClick = onPollClick,
             showAdminActions = true,
             onEditPoll = onEditPoll,
-            onDeletePoll = { id -> pendingDeleteId = id }
+            onDeletePoll = { id -> pendingDeleteId = id },
+            sort = sort
         )
     }
 

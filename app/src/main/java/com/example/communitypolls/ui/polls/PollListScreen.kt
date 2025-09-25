@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.communitypolls.model.Poll
 
+// NEW: sort choices
+enum class PollSort { NEWEST, OLDEST, TITLE_AZ, TITLE_ZA }
+
 /**
  * Plug-and-play route for showing the poll list.
  * We construct the VM here so you can just drop this into a screen.
@@ -21,10 +24,10 @@ import com.example.communitypolls.model.Poll
 fun PollListRoute(
     onPollClick: (String) -> Unit = {},
     limit: Int = 50,
-    // NEW: show admin action buttons (Edit/Delete) on each card
     showAdminActions: Boolean = false,
     onEditPoll: (String) -> Unit = {},
-    onDeletePoll: (String) -> Unit = {}
+    onDeletePoll: (String) -> Unit = {},
+    sort: PollSort = PollSort.NEWEST                 // NEW
 ) {
     val vm: PollListViewModel = viewModel(factory = PollVmFactory(limit))
     val state by vm.state.collectAsState()
@@ -35,7 +38,8 @@ fun PollListRoute(
         onPollClick = onPollClick,
         showAdminActions = showAdminActions,
         onEditPoll = onEditPoll,
-        onDeletePoll = onDeletePoll
+        onDeletePoll = onDeletePoll,
+        sort = sort                                    // NEW
     )
 }
 
@@ -47,18 +51,30 @@ fun PollListScreen(
     onPollClick: (String) -> Unit,
     showAdminActions: Boolean,
     onEditPoll: (String) -> Unit,
-    onDeletePoll: (String) -> Unit
+    onDeletePoll: (String) -> Unit,
+    sort: PollSort = PollSort.NEWEST                  // NEW
 ) {
     when {
         state.loading -> LoadingState()
         state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
-        else -> PollList(
-            items = state.items,
-            onPollClick = onPollClick,
-            showAdminActions = showAdminActions,
-            onEditPoll = onEditPoll,
-            onDeletePoll = onDeletePoll
-        )
+        else -> {
+            // NEW: client-side sorting
+            val itemsSorted = remember(state.items, sort) {
+                when (sort) {
+                    PollSort.NEWEST   -> state.items.sortedByDescending { it.createdAt }
+                    PollSort.OLDEST   -> state.items.sortedBy        { it.createdAt }
+                    PollSort.TITLE_AZ -> state.items.sortedBy        { it.title.lowercase() }
+                    PollSort.TITLE_ZA -> state.items.sortedByDescending { it.title.lowercase() }
+                }
+            }
+            PollList(
+                items = itemsSorted,                   // <- use sorted list
+                onPollClick = onPollClick,
+                showAdminActions = showAdminActions,
+                onEditPoll = onEditPoll,
+                onDeletePoll = onDeletePoll
+            )
+        }
     }
 }
 
