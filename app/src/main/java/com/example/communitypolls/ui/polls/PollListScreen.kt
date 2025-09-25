@@ -1,25 +1,25 @@
 package com.example.communitypolls.ui.polls
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.communitypolls.model.Poll
 
-// NEW: sort choices
-enum class PollSort { NEWEST, OLDEST, TITLE_AZ, TITLE_ZA }
-
-/**
- * Plug-and-play route for showing the poll list.
- * We construct the VM here so you can just drop this into a screen.
- */
 @Composable
 fun PollListRoute(
     onPollClick: (String) -> Unit = {},
@@ -27,7 +27,8 @@ fun PollListRoute(
     showAdminActions: Boolean = false,
     onEditPoll: (String) -> Unit = {},
     onDeletePoll: (String) -> Unit = {},
-    sort: PollSort = PollSort.NEWEST                 // NEW
+    onCreatePoll: (() -> Unit)? = null,
+    sort: PollSort = PollSort.NEWEST
 ) {
     val vm: PollListViewModel = viewModel(factory = PollVmFactory(limit))
     val state by vm.state.collectAsState()
@@ -39,11 +40,11 @@ fun PollListRoute(
         showAdminActions = showAdminActions,
         onEditPoll = onEditPoll,
         onDeletePoll = onDeletePoll,
-        sort = sort                                    // NEW
+        onCreatePoll = onCreatePoll,
+        sort = sort
     )
 }
 
-/** Pure UI: render the list and states */
 @Composable
 fun PollListScreen(
     state: PollListUiState,
@@ -52,23 +53,24 @@ fun PollListScreen(
     showAdminActions: Boolean,
     onEditPoll: (String) -> Unit,
     onDeletePoll: (String) -> Unit,
-    sort: PollSort = PollSort.NEWEST                  // NEW
+    onCreatePoll: (() -> Unit)?,
+    sort: PollSort
 ) {
     when {
         state.loading -> LoadingState()
         state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
+        state.items.isEmpty() -> EmptyState(onCreatePoll)
         else -> {
-            // NEW: client-side sorting
             val itemsSorted = remember(state.items, sort) {
                 when (sort) {
                     PollSort.NEWEST   -> state.items.sortedByDescending { it.createdAt }
-                    PollSort.OLDEST   -> state.items.sortedBy        { it.createdAt }
-                    PollSort.TITLE_AZ -> state.items.sortedBy        { it.title.lowercase() }
+                    PollSort.OLDEST   -> state.items.sortedBy { it.createdAt }
+                    PollSort.TITLE_AZ -> state.items.sortedBy { it.title.lowercase() }
                     PollSort.TITLE_ZA -> state.items.sortedByDescending { it.title.lowercase() }
                 }
             }
             PollList(
-                items = itemsSorted,                   // <- use sorted list
+                items = itemsSorted,
                 onPollClick = onPollClick,
                 showAdminActions = showAdminActions,
                 onEditPoll = onEditPoll,
@@ -78,32 +80,40 @@ fun PollListScreen(
     }
 }
 
-@Composable
-private fun LoadingState() {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator()
-        Spacer(Modifier.height(12.dp))
-        Text("Loading polls…")
-    }
-}
+
 
 @Composable
-private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit
-) {
+private fun EmptyState(onCreatePoll: (() -> Unit)?) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(message, color = MaterialTheme.colorScheme.error)
-        Spacer(Modifier.height(16.dp))
-        Button(onClick = onRetry) { Text("Refresh") }
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("🗒️", style = MaterialTheme.typography.headlineLarge)
+                Text("No polls yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Create your first poll to get started!",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(Modifier.height(12.dp))
+                if (onCreatePoll != null) {
+                    Button(onClick = onCreatePoll) { Text("+ Create Poll") }
+                }
+            }
+        }
     }
 }
 
@@ -117,7 +127,8 @@ private fun PollList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        contentPadding = PaddingValues(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(items, key = { it.id }) { poll ->
             PollItemCard(
@@ -127,7 +138,6 @@ private fun PollList(
                 onEdit = { onEditPoll(poll.id) },
                 onDelete = { onDeletePoll(poll.id) }
             )
-            Divider()
         }
     }
 }
@@ -140,25 +150,32 @@ private fun PollItemCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val subtitle = remember(poll.description) {
-        poll.description.ifBlank { "No description" }
-    }
-    val optionsSummary = remember(poll.options) {
-        "${poll.options.size} option${if (poll.options.size == 1) "" else "s"}"
-    }
-    val statusText = remember(poll) { if (poll.isActive) "Active" else "Closed" }
+    val subtitle = poll.description.ifBlank { "No description" }
+    val optionsSummary = "${poll.options.size} option${if (poll.options.size == 1) "" else "s"}"
+    val statusText = if (poll.isActive) "Active" else "Closed"
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-            .clickable(onClick = onClick)
+            .clickable(onClick = onClick),
+        shape = MaterialTheme.shapes.extraLarge,
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text(
-                poll.title.ifBlank { "(Untitled poll)" },
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                Text(
+                    poll.title.ifBlank { "(Untitled poll)" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             Spacer(Modifier.height(4.dp))
             Text(
                 subtitle,
@@ -166,11 +183,17 @@ private fun PollItemCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+
             Spacer(Modifier.height(8.dp))
-            Text(
-                "$optionsSummary • $statusText",
-                style = MaterialTheme.typography.labelMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusDot(color = if (poll.isActive) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline)
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "$statusText • $optionsSummary",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             if (showAdminActions) {
                 Spacer(Modifier.height(12.dp))
@@ -183,5 +206,40 @@ private fun PollItemCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StatusDot(color: Color, size: Dp = 10.dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(MaterialTheme.shapes.small)
+            .background(color)
+    )
+}
+@Composable
+fun LoadingState() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(12.dp))
+        Text("Loading polls…")
+    }
+}
+
+@Composable
+fun ErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(message, color = MaterialTheme.colorScheme.error)
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onRetry) { Text("Retry") }
     }
 }
