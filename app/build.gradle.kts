@@ -3,7 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
+    id("org.cyclonedx.bom") version "1.9.0"
 }
+
+subprojects { plugins.withId("com.android.application") { apply(plugin = "org.cyclonedx.bom") } }
 
 android {
     namespace = "com.example.communitypolls"
@@ -37,6 +40,8 @@ android {
     kotlinOptions { jvmTarget = "17" }
 
     buildFeatures { compose = true }
+
+
 }
 
 dependencies {
@@ -84,3 +89,4 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test:rules:1.5.0")
 }
+
