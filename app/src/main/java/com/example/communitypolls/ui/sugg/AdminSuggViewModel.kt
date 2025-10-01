@@ -40,6 +40,7 @@ class AdminSuggViewModel(
             }
         }
     }
+<<<<<<< HEAD
 
     fun delete(id: String) {
         viewModelScope.launch {
@@ -54,4 +55,6 @@ class AdminSuggViewModel(
         }
     }
 
+=======
+>>>>>>> 0af30b8 (Added some security measures)
 }

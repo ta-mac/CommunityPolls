@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.communitypolls.ui.screens
@@ -8,20 +9,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+=======
+package com.example.communitypolls.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+>>>>>>> 0af30b8 (Added some security measures)
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+<<<<<<< HEAD
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+=======
+>>>>>>> 0af30b8 (Added some security measures)
 import androidx.compose.ui.unit.dp
 import com.example.communitypolls.ui.ServiceLocator
 import com.example.communitypolls.ui.polls.PollListRoute
 import com.example.communitypolls.ui.polls.PollSort
 import kotlinx.coroutines.launch
 
+<<<<<<< HEAD
 /* ---------------------------- SHARED TOP BAR ---------------------------- */
 
 @Composable
@@ -58,6 +69,61 @@ private fun PollsTopBar(
 }
 
 /* ------------------------------- GUEST ------------------------------- */
+=======
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeScaffold(
+    title: String,
+    onSignOut: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {},
+    content: @Composable () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(title) },
+                actions = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        actions()
+                        TextButton(onClick = onSignOut) { Text("Sign out") }
+                    }
+                }
+            )
+        }
+    ) { padding -> Box(Modifier.padding(padding).fillMaxSize()) { content() } }
+}
+
+/* ------------------------------- Sort menu ------------------------------- */
+
+@Composable
+private fun SortMenu(
+    sort: PollSort,
+    onChange: (PollSort) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.Sort, contentDescription = "Sort")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            @Composable
+            fun item(label: String, value: PollSort) {
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = { expanded = false; onChange(value) },
+                    trailingIcon = { if (sort == value) Text("•") else null }
+                )
+            }
+            item("Newest", PollSort.NEWEST)
+            item("Oldest", PollSort.OLDEST)
+            item("A → Z",  PollSort.TITLE_AZ)
+            item("Z → A",  PollSort.TITLE_ZA)
+        }
+    }
+}
+
+/* ------------------------------- Guest ------------------------------- */
+>>>>>>> 0af30b8 (Added some security measures)
 
 @Composable
 fun HomeGuestScreen(
@@ -67,6 +133,7 @@ fun HomeGuestScreen(
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
 
+<<<<<<< HEAD
     Scaffold(
         topBar = {
             Row(
@@ -124,6 +191,25 @@ fun HomeGuestScreen(
 
 
 /* ------------------------------- USER ------------------------------- */
+=======
+    HomeScaffold(
+        title = "Community Polls",
+        onSignOut = onSignOut,
+        actions = {
+            Button(onClick = onSuggestClick) { Text("Suggest a poll") }
+            SortMenu(sort = sort, onChange = { sort = it })
+        }
+    ) {
+        PollListRoute(
+            onPollClick = onPollClick,
+            showAdminActions = false,
+            sort = sort
+        )
+    }
+}
+
+/* -------------------------------- User ------------------------------- */
+>>>>>>> 0af30b8 (Added some security measures)
 
 @Composable
 fun HomeUserScreen(
@@ -133,6 +219,7 @@ fun HomeUserScreen(
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
 
+<<<<<<< HEAD
     Scaffold(
         topBar = {
             Row(
@@ -193,6 +280,25 @@ fun HomeUserScreen(
 
 
 /* ------------------------------- ADMIN ------------------------------- */
+=======
+    HomeScaffold(
+        title = "Community Polls",
+        onSignOut = onSignOut,
+        actions = {
+            Button(onClick = onSuggestClick) { Text("Suggest a poll") }
+            SortMenu(sort = sort, onChange = { sort = it })
+        }
+    ) {
+        PollListRoute(
+            onPollClick = onPollClick,
+            showAdminActions = false,
+            sort = sort
+        )
+    }
+}
+
+/* ------------------------------- Admin ------------------------------- */
+>>>>>>> 0af30b8 (Added some security measures)
 
 @Composable
 fun HomeAdminScreen(
@@ -200,11 +306,16 @@ fun HomeAdminScreen(
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
     onEditPoll: (String) -> Unit,
+<<<<<<< HEAD
     onSuggestClick: () -> Unit
+=======
+    onSuggestClick: () -> Unit // opens the review list
+>>>>>>> 0af30b8 (Added some security measures)
 ) {
     val repo = ServiceLocator.pollRepository
     val scope = rememberCoroutineScope()
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
+<<<<<<< HEAD
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf(false) }
 
@@ -271,6 +382,28 @@ fun HomeAdminScreen(
                 sort = sort
             )
         }
+=======
+
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+    var deleting by remember { mutableStateOf(false) }
+
+    HomeScaffold(
+        title = "Admin • Community Polls",
+        onSignOut = onSignOut,
+        actions = {
+            Button(onClick = onSuggestClick) { Text("User Poll") }
+            Button(onClick = onCreatePoll) { Text("Create poll") }
+            SortMenu(sort = sort, onChange = { sort = it })
+        }
+    ) {
+        PollListRoute(
+            onPollClick = onPollClick,
+            showAdminActions = true,
+            onEditPoll = onEditPoll,
+            onDeletePoll = { id -> pendingDeleteId = id },
+            sort = sort
+        )
+>>>>>>> 0af30b8 (Added some security measures)
     }
 
     if (pendingDeleteId != null) {
@@ -291,6 +424,7 @@ fun HomeAdminScreen(
                             }
                         }
                     }
+<<<<<<< HEAD
                 ) {
                     Text(if (deleting) "Deleting…" else "Delete")
                 }
@@ -300,6 +434,12 @@ fun HomeAdminScreen(
                     enabled = !deleting,
                     onClick = { pendingDeleteId = null }
                 ) {
+=======
+                ) { Text(if (deleting) "Deleting…" else "Delete") }
+            },
+            dismissButton = {
+                TextButton(enabled = !deleting, onClick = { pendingDeleteId = null }) {
+>>>>>>> 0af30b8 (Added some security measures)
                     Text("Cancel")
                 }
             },
@@ -308,4 +448,7 @@ fun HomeAdminScreen(
         )
     }
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0af30b8 (Added some security measures)

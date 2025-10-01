@@ -5,6 +5,7 @@ package com.example.communitypolls.ui.sugg
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+<<<<<<< HEAD
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -12,6 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+=======
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+>>>>>>> 0af30b8 (Added some security measures)
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.communitypolls.model.Suggestion
@@ -21,6 +27,7 @@ fun AdminSuggScreen(
     state: AdminSuggState,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
+<<<<<<< HEAD
     onBack: () -> Unit,
     onDelete: (String) -> Unit
 ) {
@@ -33,10 +40,20 @@ fun AdminSuggScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
+=======
+    onBack: () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("User Polls (Suggestions)") },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } }
+>>>>>>> 0af30b8 (Added some security measures)
             )
         }
     ) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
+<<<<<<< HEAD
             if (state.loading) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -56,6 +73,16 @@ fun AdminSuggScreen(
                         onDecline = onDecline,
                         onDelete = onDelete
                     )
+=======
+            if (state.loading) LinearProgressIndicator(Modifier.fillMaxWidth())
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(state.items, key = { it.id }) { s ->
+                    SuggestionCard(s, onAccept, onDecline)
+>>>>>>> 0af30b8 (Added some security measures)
                 }
             }
         }
@@ -64,6 +91,7 @@ fun AdminSuggScreen(
 
 @Composable
 private fun SuggestionCard(
+<<<<<<< HEAD
     suggestion: Suggestion,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
@@ -127,11 +155,31 @@ private fun SuggestionCard(
                         Text("Delete")
                     }
                 }
+=======
+    s: Suggestion,
+    onAccept: (String) -> Unit,
+    onDecline: (String) -> Unit
+) {
+    val pending = s.status == "pending"
+    Card {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(s.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                StatusChip(s.status)
+            }
+            Text(s.description)
+            Divider()
+            Text("From: ${s.createdByName}", style = MaterialTheme.typography.bodySmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(enabled = pending, onClick = { onAccept(s.id) }) { Text("Accept") }
+                OutlinedButton(enabled = pending, onClick = { onDecline(s.id) }) { Text("Decline") }
+>>>>>>> 0af30b8 (Added some security measures)
             }
         }
     }
 }
 
+<<<<<<< HEAD
 
 @Composable
 private fun StatusChip(status: String) {
@@ -151,6 +199,20 @@ private fun StatusChip(status: String) {
             text = status.replaceFirstChar { it.uppercase() },
             color = textColor,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+=======
+@Composable
+private fun StatusChip(status: String) {
+    val color = when (status) {
+        "pending" -> MaterialTheme.colorScheme.secondaryContainer
+        "accepted" -> MaterialTheme.colorScheme.primaryContainer
+        "declined" -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    Surface(color = color, tonalElevation = 2.dp, shape = MaterialTheme.shapes.small) {
+        Text(
+            status.replaceFirstChar { it.titlecase() },
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+>>>>>>> 0af30b8 (Added some security measures)
             style = MaterialTheme.typography.labelMedium
         )
     }

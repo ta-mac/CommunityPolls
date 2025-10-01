@@ -61,6 +61,7 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
             SuggOp.Error(e.message ?: "Failed to update status")
         }
     }
+<<<<<<< HEAD
 
     override suspend fun delete(id: String): SuggOp {
         return try {
@@ -72,4 +73,6 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
     }
 
 
+=======
+>>>>>>> 0af30b8 (Added some security measures)
 }
