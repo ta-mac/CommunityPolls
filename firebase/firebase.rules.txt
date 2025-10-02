@@ -1,0 +1,82 @@
+// Firestore Security Rules for CommunityPolls (users-based roles + poll schema)
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdminUser() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // ----- Users -----
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid || isAdminUser();
+      allow create: if isSignedIn() && request.auth.uid == uid
+        && (!("role" in request.resource.data) || request.resource.data.role in ["user","guest","admin"]);
+      allow update: if isSignedIn() && request.auth.uid == uid
+        && ( (("role" in request.resource.data) == false) ||
+             (request.resource.data.role == resource.data.role) ||
+             isAdminUser() );
+      allow delete: if isSignedIn() && (request.auth.uid == uid || isAdminUser());
+    }
+
+    // ----- Polls (admin-only writes) -----
+    function isValidNewPoll(data) {
+      return data is map
+        && ("title" in data) && (data.title is string) && (data.title.size() > 0)
+        && ("description" in data) && (data.description is string)
+        && ("createdBy" in data) && (data.createdBy is string)
+        && ("createdAt" in data) && (data.createdAt is int)
+        && (!("closesAt" in data) || data.closesAt == null || data.closesAt is int)
+        && ("isActive" in data) && (data.isActive is bool)
+        && ("options" in data) && (data.options is list) && (data.options.size() >= 2);
+    }
+    function isValidPollUpdate(old, neu) {
+      return
+        (("createdBy" in neu) && (neu.createdBy == old.createdBy)) &&
+        (("createdAt" in neu) && (neu.createdAt == old.createdAt)) &&
+        (!("title" in neu) || (neu.title is string)) &&
+        (!("description" in neu) || (neu.description is string)) &&
+        (!("closesAt" in neu) || neu.closesAt == null || neu.closesAt is int) &&
+        (!("isActive" in neu) || (neu.isActive is bool)) &&
+        (!("options" in neu) || ((neu.options is list) && (neu.options.size() >= 2)));
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create: if isAdminUser() && isValidNewPoll(request.resource.data);
+      allow update: if isAdminUser() && isValidPollUpdate(resource.data, request.resource.data);
+      allow delete: if isAdminUser();
+
+      // Votes
+      match /votes/{uid} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(uid))
+          && request.resource.data is map
+          && ("optionId" in request.resource.data) && (request.resource.data.optionId is string)
+          && ("createdAt" in request.resource.data) && (request.resource.data.createdAt is int);
+        allow update: if false;        // no switching votes
+        allow delete: if isAdminUser();
+      }
+    }
+
+    // ----- Suggestions -----
+    match /suggestions/{id} {
+      // Anyone signed-in can read and create
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+
+      // Only admins can flip status, and only from pending -> accepted/declined
+      allow update: if isAdminUser()
+        && resource.data.status == "pending"
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(["status"])
+        && request.resource.data.status in ["accepted", "declined"];
+
+      allow delete: if false;
+    }
+  }
+}
