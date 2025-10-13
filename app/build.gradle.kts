@@ -1,5 +1,6 @@
 plugins {
     id("com.android.application")
+    id("com.google.firebase.firebase-perf")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
@@ -45,6 +46,10 @@ android {
 }
 
 dependencies {
+    // Firebase Performance Monitoring
+    implementation("com.google.firebase:firebase-perf-ktx")
+    // LeakCanary for detecting memory leaks in debug builds
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.12")
     implementation("androidx.core:core-ktx:1.13.1")
 
     // Compose
@@ -88,5 +93,8 @@ dependencies {
     // AndroidX test
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test:rules:1.5.0")
+
+    // Firebase Performance Monitoring
+    implementation("com.google.firebase:firebase-perf-ktx:20.5.1") // latest at time of writing
 }
 
