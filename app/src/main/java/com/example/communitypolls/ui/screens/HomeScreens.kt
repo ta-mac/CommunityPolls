@@ -1,71 +1,78 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.communitypolls.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.communitypolls.ui.ServiceLocator
 import com.example.communitypolls.ui.polls.PollListRoute
 import com.example.communitypolls.ui.polls.PollSort
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+/* ---------------------------- SHARED COMPONENTS ---------------------------- */
+
 @Composable
 private fun HomeScaffold(
-    title: String,
     onSignOut: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
-    content: @Composable () -> Unit
+    content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title) },
+                title = { Text("") }, // Remove "Polls" title to avoid duplicate
                 actions = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
                         actions()
-                        TextButton(onClick = onSignOut) { Text("Sign out") }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = onSignOut) {
+                        Text("Sign out", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             )
-        }
-    ) { padding -> Box(Modifier.padding(padding).fillMaxSize()) { content() } }
+        },
+        content = content
+    )
 }
 
-/* ------------------------------- Sort menu ------------------------------- */
-
 @Composable
-private fun SortMenu(
+private fun SortBar(
     sort: PollSort,
-    onChange: (PollSort) -> Unit
+    onSortChange: (PollSort) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { expanded = true }) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .shadow(1.dp, shape = RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        IconButton(onClick = { onSortChange(PollSort.NEWEST) }) {
             Icon(Icons.Filled.Sort, contentDescription = "Sort")
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            @Composable
-            fun item(label: String, value: PollSort) {
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    onClick = { expanded = false; onChange(value) },
-                    trailingIcon = { if (sort == value) Text("•") else null }
-                )
-            }
-            item("Newest", PollSort.NEWEST)
-            item("Oldest", PollSort.OLDEST)
-            item("A → Z",  PollSort.TITLE_AZ)
-            item("Z → A",  PollSort.TITLE_ZA)
         }
     }
 }
 
-/* ------------------------------- Guest ------------------------------- */
+/* ------------------------------- GUEST ------------------------------- */
 
 @Composable
 fun HomeGuestScreen(
@@ -75,23 +82,57 @@ fun HomeGuestScreen(
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
 
-    HomeScaffold(
-        title = "Community Polls",
-        onSignOut = onSignOut,
-        actions = {
-            Button(onClick = onSuggestClick) { Text("Suggest a poll") }
-            SortMenu(sort = sort, onChange = { sort = it })
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {},
+                actions = {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        AssistChip(
+                            onClick = onSuggestClick,
+                            label = { Text("Suggest") },
+                            leadingIcon = {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                            },
+                            shape = RoundedCornerShape(50)
+                        )
+                        IconButton(onClick = {
+                            sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                        }) {
+                            Icon(Icons.Filled.Sort, contentDescription = "Sort")
+                        }
+                        TextButton(onClick = onSignOut) {
+                            Text("Sign out", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            )
         }
-    ) {
-        PollListRoute(
-            onPollClick = onPollClick,
-            showAdminActions = false,
-            sort = sort
-        )
+    ) { padding ->
+        Column(Modifier.padding(padding)) {
+            Text(
+                text = "Polls",
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            PollListRoute(
+                onPollClick = onPollClick,
+                showAdminActions = false,
+                onEditPoll = {},
+                onDeletePoll = {},
+                sort = sort
+            )
+        }
     }
 }
 
-/* -------------------------------- User ------------------------------- */
+
+
+/* ------------------------------- USER ------------------------------- */
 
 @Composable
 fun HomeUserScreen(
@@ -101,23 +142,74 @@ fun HomeUserScreen(
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
 
-    HomeScaffold(
-        title = "Community Polls",
-        onSignOut = onSignOut,
-        actions = {
-            Button(onClick = onSuggestClick) { Text("Suggest a poll") }
-            SortMenu(sort = sort, onChange = { sort = it })
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {},
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AssistChip(
+                            onClick = onSuggestClick,
+                            label = { Text("Suggest") },
+                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                            shape = RoundedCornerShape(50)
+                        )
+                        TextButton(onClick = onSignOut) {
+                            Text("Sign out", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            )
         }
-    ) {
-        PollListRoute(
-            onPollClick = onPollClick,
-            showAdminActions = false,
-            sort = sort
-        )
+    ) { padding ->
+        Column(Modifier.padding(padding)) {
+            // Sorting Box
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .shadow(1.dp, shape = RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Active", fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.width(8.dp))
+                    Text("•", color = Color.Green)
+                    Spacer(Modifier.width(8.dp))
+                    Text("2 Options", fontWeight = FontWeight.Light)
+                }
+                IconButton(onClick = {
+                    sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                }) {
+                    Icon(Icons.Default.Sort, contentDescription = "Sort")
+                }
+            }
+
+            Text(
+                text = "Polls",
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            PollListRoute(
+                onPollClick = onPollClick,
+                showAdminActions = false,
+                onEditPoll = {},
+                onDeletePoll = {},
+                sort = sort
+            )
+        }
     }
 }
 
-/* ------------------------------- Admin ------------------------------- */
+
+/* ------------------------------- ADMIN ------------------------------- */
 
 @Composable
 fun HomeAdminScreen(
@@ -125,33 +217,87 @@ fun HomeAdminScreen(
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
     onEditPoll: (String) -> Unit,
-    onSuggestClick: () -> Unit // opens the review list
+    onSuggestClick: () -> Unit
 ) {
     val repo = ServiceLocator.pollRepository
     val scope = rememberCoroutineScope()
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
-
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     var deleting by remember { mutableStateOf(false) }
 
-    HomeScaffold(
-        title = "Admin • Community Polls",
-        onSignOut = onSignOut,
-        actions = {
-            Button(onClick = onSuggestClick) { Text("User Poll") }
-            Button(onClick = onCreatePoll) { Text("Create poll") }
-            SortMenu(sort = sort, onChange = { sort = it })
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {},
+                actions = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        AssistChip(
+                            onClick = onSuggestClick,
+                            label = { Text("User Polls") },
+                            shape = RoundedCornerShape(50)
+                        )
+                        AssistChip(
+                            onClick = onCreatePoll,
+                            label = { Text("Create") },
+                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = "Create") },
+                            shape = RoundedCornerShape(50)
+                        )
+                        TextButton(onClick = onSignOut) {
+                            Text("Sign out", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            )
         }
-    ) {
-        PollListRoute(
-            onPollClick = onPollClick,
-            showAdminActions = true,
-            onEditPoll = onEditPoll,
-            onDeletePoll = { id -> pendingDeleteId = id },
-            sort = sort
-        )
+    ) { padding ->
+        Column(Modifier.padding(padding)) {
+            // Sorting Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .shadow(1.dp, shape = RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Active", fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.width(8.dp))
+                    Text("•", color = Color.Green)
+                    Spacer(Modifier.width(8.dp))
+                    Text("2 Options", fontWeight = FontWeight.Light)
+                }
+                IconButton(onClick = {
+                    sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                }) {
+                    Icon(Icons.Default.Sort, contentDescription = "Sort")
+                }
+            }
+
+            // Section Title
+            Text(
+                text = "Polls",
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            // Poll List
+            PollListRoute(
+                onPollClick = onPollClick,
+                showAdminActions = true,
+                onEditPoll = onEditPoll,
+                onDeletePoll = { id -> pendingDeleteId = id },
+                sort = sort
+            )
+        }
     }
 
+    // Confirm Delete Dialog
     if (pendingDeleteId != null) {
         AlertDialog(
             onDismissRequest = { if (!deleting) pendingDeleteId = null },
@@ -170,7 +316,9 @@ fun HomeAdminScreen(
                             }
                         }
                     }
-                ) { Text(if (deleting) "Deleting…" else "Delete") }
+                ) {
+                    Text(if (deleting) "Deleting…" else "Delete")
+                }
             },
             dismissButton = {
                 TextButton(enabled = !deleting, onClick = { pendingDeleteId = null }) {
@@ -182,3 +330,4 @@ fun HomeAdminScreen(
         )
     }
 }
+
