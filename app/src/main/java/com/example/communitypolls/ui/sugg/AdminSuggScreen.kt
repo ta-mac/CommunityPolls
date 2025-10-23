@@ -21,7 +21,8 @@ fun AdminSuggScreen(
     state: AdminSuggState,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onDelete: (String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -52,7 +53,8 @@ fun AdminSuggScreen(
                     SuggestionCard(
                         suggestion = suggestion,
                         onAccept = onAccept,
-                        onDecline = onDecline
+                        onDecline = onDecline,
+                        onDelete = onDelete
                     )
                 }
             }
@@ -64,7 +66,8 @@ fun AdminSuggScreen(
 private fun SuggestionCard(
     suggestion: Suggestion,
     onAccept: (String) -> Unit,
-    onDecline: (String) -> Unit
+    onDecline: (String) -> Unit,
+    onDelete: (String) -> Unit //
 ) {
     val isPending = suggestion.status == "pending"
 
@@ -75,8 +78,7 @@ private fun SuggestionCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
-            modifier = Modifier
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -110,24 +112,26 @@ private fun SuggestionCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Button(
-                    onClick = { onAccept(suggestion.id) },
-                    enabled = isPending,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("Accept")
-                }
-                OutlinedButton(
-                    onClick = { onDecline(suggestion.id) },
-                    enabled = isPending,
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("Decline")
+                if (isPending) {
+                    Button(onClick = { onAccept(suggestion.id) }) {
+                        Text("Accept")
+                    }
+                    OutlinedButton(onClick = { onDecline(suggestion.id) }) {
+                        Text("Decline")
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { onDelete(suggestion.id) },
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun StatusChip(status: String) {

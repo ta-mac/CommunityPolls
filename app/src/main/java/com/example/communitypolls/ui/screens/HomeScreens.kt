@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,55 +22,39 @@ import com.example.communitypolls.ui.polls.PollListRoute
 import com.example.communitypolls.ui.polls.PollSort
 import kotlinx.coroutines.launch
 
-/* ---------------------------- SHARED COMPONENTS ---------------------------- */
+/* ---------------------------- SHARED TOP BAR ---------------------------- */
 
 @Composable
-private fun HomeScaffold(
-    onSignOut: () -> Unit,
-    actions: @Composable RowScope.() -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("") }, // Remove "Polls" title to avoid duplicate
-                actions = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        actions()
-                    }
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onSignOut) {
-                        Text("Sign out", style = MaterialTheme.typography.labelLarge)
-                    }
-                }
-            )
-        },
-        content = content
-    )
-}
-
-@Composable
-private fun SortBar(
+private fun PollsTopBar(
+    onSuggestClick: () -> Unit,
+    onSortClick: () -> Unit,
     sort: PollSort,
-    onSortChange: (PollSort) -> Unit
+    onSignOut: () -> Unit,
+    showSort: Boolean = true,
+    suggestLabel: String = "Suggest"
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(1.dp, shape = RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        IconButton(onClick = { onSortChange(PollSort.NEWEST) }) {
-            Icon(Icons.Filled.Sort, contentDescription = "Sort")
+    TopAppBar(
+        title = { Text("Polls", style = MaterialTheme.typography.titleLarge) },
+        actions = {
+            AssistChip(
+                onClick = onSuggestClick,
+                label = { Text(suggestLabel) },
+                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                shape = RoundedCornerShape(50)
+            )
+            if (showSort) {
+                AssistChip(
+                    onClick = onSortClick,
+                    label = { Text("Sort: ${if (sort == PollSort.NEWEST) "Newest" else "Oldest"}") },
+                    leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+            }
+            TextButton(onClick = onSignOut) {
+                Text("Sign Out", style = MaterialTheme.typography.labelLarge)
+            }
         }
-    }
+    )
 }
 
 /* ------------------------------- GUEST ------------------------------- */
@@ -84,41 +69,48 @@ fun HomeGuestScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {},
-                actions = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        AssistChip(
-                            onClick = onSuggestClick,
-                            label = { Text("Suggest") },
-                            leadingIcon = {
-                                Icon(Icons.Default.Add, contentDescription = null)
-                            },
-                            shape = RoundedCornerShape(50)
-                        )
-                        IconButton(onClick = {
-                            sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
-                        }) {
-                            Icon(Icons.Filled.Sort, contentDescription = "Sort")
-                        }
-                        TextButton(onClick = onSignOut) {
-                            Text("Sign out", style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AssistChip(
+                    onClick = onSuggestClick,
+                    label = { Text("Suggest Poll") },
+                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+
+                AssistChip(
+                    onClick = {
+                        sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                    },
+                    label = { Text("Sort: ${if (sort == PollSort.NEWEST) "Newest" else "Oldest"}") },
+                    leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+            }
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                TextButton(onClick = onSignOut) {
+                    Text("Sign out", style = MaterialTheme.typography.labelLarge)
                 }
-            )
+            }
         }
     ) { padding ->
-        Column(Modifier.padding(padding)) {
-            Text(
-                text = "Polls",
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-                style = MaterialTheme.typography.titleLarge
-            )
-
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
             PollListRoute(
                 onPollClick = onPollClick,
                 showAdminActions = false,
@@ -129,7 +121,6 @@ fun HomeGuestScreen(
         }
     }
 }
-
 
 
 /* ------------------------------- USER ------------------------------- */
@@ -144,59 +135,49 @@ fun HomeUserScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {},
-                actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AssistChip(
-                            onClick = onSuggestClick,
-                            label = { Text("Suggest") },
-                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
-                            shape = RoundedCornerShape(50)
-                        )
-                        TextButton(onClick = onSignOut) {
-                            Text("Sign out", style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(Modifier.padding(padding)) {
-            // Sorting Box
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .shadow(1.dp, shape = RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(top = 12.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Active", fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.width(8.dp))
-                    Text("•", color = Color.Green)
-                    Spacer(Modifier.width(8.dp))
-                    Text("2 Options", fontWeight = FontWeight.Light)
-                }
-                IconButton(onClick = {
-                    sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
-                }) {
-                    Icon(Icons.Default.Sort, contentDescription = "Sort")
+                AssistChip(
+                    onClick = onSuggestClick,
+                    label = { Text("Suggest Poll") },
+                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+
+                AssistChip(
+                    onClick = {
+                        sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                    },
+                    label = { Text("Sort: ${if (sort == PollSort.NEWEST) "Newest" else "Oldest"}") },
+                    leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+            }
+        },
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 36.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                TextButton(onClick = onSignOut) {
+                    Text("Sign out", style = MaterialTheme.typography.labelLarge)
                 }
             }
-
-            Text(
-                text = "Polls",
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-                style = MaterialTheme.typography.titleLarge
-            )
-
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            // Poll list
             PollListRoute(
                 onPollClick = onPollClick,
                 showAdminActions = false,
@@ -207,6 +188,8 @@ fun HomeUserScreen(
         }
     }
 }
+
+
 
 
 /* ------------------------------- ADMIN ------------------------------- */
@@ -227,66 +210,59 @@ fun HomeAdminScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {},
-                actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        AssistChip(
-                            onClick = onSuggestClick,
-                            label = { Text("User Polls") },
-                            shape = RoundedCornerShape(50)
-                        )
-                        AssistChip(
-                            onClick = onCreatePoll,
-                            label = { Text("Create") },
-                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = "Create") },
-                            shape = RoundedCornerShape(50)
-                        )
-                        TextButton(onClick = onSignOut) {
-                            Text("Sign out", style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(Modifier.padding(padding)) {
-            // Sorting Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .shadow(1.dp, shape = RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Active", fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.width(8.dp))
-                    Text("•", color = Color.Green)
-                    Spacer(Modifier.width(8.dp))
-                    Text("2 Options", fontWeight = FontWeight.Light)
-                }
-                IconButton(onClick = {
-                    sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
-                }) {
-                    Icon(Icons.Default.Sort, contentDescription = "Sort")
+                AssistChip(
+                    onClick = onSuggestClick,
+                    label = { Text("User Polls") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                AssistChip(
+                    onClick = onCreatePoll,
+                    label = { Text("Create Poll") },
+                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                AssistChip(
+                    onClick = {
+                        sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                    },
+                    label = { Text("Sort: ${if (sort == PollSort.NEWEST) "New" else "Old"}") },
+                    leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) },
+                    shape = RoundedCornerShape(50)
+                )
+            }
+        }
+        ,
+        bottomBar = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                TextButton(onClick = onSignOut) {
+                    Text("Sign out", style = MaterialTheme.typography.labelLarge)
                 }
             }
-
-            // Section Title
-            Text(
-                text = "Polls",
-                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            // Poll List
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
             PollListRoute(
                 onPollClick = onPollClick,
                 showAdminActions = true,
@@ -297,7 +273,6 @@ fun HomeAdminScreen(
         }
     }
 
-    // Confirm Delete Dialog
     if (pendingDeleteId != null) {
         AlertDialog(
             onDismissRequest = { if (!deleting) pendingDeleteId = null },
@@ -321,7 +296,10 @@ fun HomeAdminScreen(
                 }
             },
             dismissButton = {
-                TextButton(enabled = !deleting, onClick = { pendingDeleteId = null }) {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = { pendingDeleteId = null }
+                ) {
                     Text("Cancel")
                 }
             },

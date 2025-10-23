@@ -22,4 +22,6 @@ interface SuggestionRepository {
 
     fun observeAllSuggestions(): Flow<List<Suggestion>>
     suspend fun updateStatus(id: String, newStatus: String): SuggOp
+    suspend fun delete(id: String): SuggOp
+
 }

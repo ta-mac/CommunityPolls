@@ -40,4 +40,18 @@ class AdminSuggViewModel(
             }
         }
     }
+
+    fun delete(id: String) {
+        viewModelScope.launch {
+            when (repo.delete(id)) {
+                is SuggOp.Success -> {
+                    // Let firestore observer auto-update the list
+                }
+                is SuggOp.Error -> {
+                    _state.value = _state.value.copy(error = "Could not delete suggestion")
+                }
+            }
+        }
+    }
+
 }

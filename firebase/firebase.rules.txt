@@ -76,7 +76,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).changedKeys().hasOnly(["status"])
         && request.resource.data.status in ["accepted", "declined"];
 
-      allow delete: if false;
+      allow delete: if isAdminUser();
     }
   }
 }
