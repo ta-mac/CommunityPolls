@@ -8,18 +8,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-<<<<<<< HEAD
-<<<<<<< HEAD
-import com.google.firebase.perf.FirebasePerformance              //  NEW: Performance monitoring
-import com.google.firebase.perf.metrics.Trace                   //  NEW: Performance tracing
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-import com.google.firebase.perf.FirebasePerformance              //  NEW: Performance monitoring
-import com.google.firebase.perf.metrics.Trace                   //  NEW: Performance tracing
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
+import com.google.firebase.perf.FirebasePerformance              // NEW: Performance monitoring
+import com.google.firebase.perf.metrics.Trace                   // NEW: Performance tracing
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -31,20 +21,9 @@ class FirebasePollRepository(
     private val db: FirebaseFirestore
 ) : PollRepository {
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     // 🔥 NEW: In-memory cache to reduce reads
     private val pollCache = mutableMapOf<String, Poll>()
 
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-    // 🔥 NEW: In-memory cache to reduce reads
-    private val pollCache = mutableMapOf<String, Poll>()
-
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
     private val polls get() = db.collection("polls")
 
     // ---------- Streams ----------
@@ -58,29 +37,15 @@ class FirebasePollRepository(
             reg = q.addSnapshotListener { snap, err ->
                 if (err != null) {
                     Log.e(TAG, "Fallback query failed: ${err.message}", err)
-                    trySend(emptyList()); return@addSnapshotListener
+                    trySend(emptyList())
+                    return@addSnapshotListener
                 }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
                 val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
-=======
-                val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
-=======
 
-                val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
->>>>>>> 5f6ea81 (Updated App Icon)
-
-                // 🔥 NEW: Cache results locally
+                // 🔥 Cache results locally
                 list.forEach { pollCache[it.id] = it }
 
-<<<<<<< HEAD
-=======
-                val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
->>>>>>> 0af30b8 (Added some security measures)
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
                 trySend(list)
             }
         }
@@ -96,16 +61,7 @@ class FirebasePollRepository(
                     Log.e(TAG, "Ordered query failed: ${err.message}", err)
                     if (err is FirebaseFirestoreException &&
                         err.code == FirebaseFirestoreException.Code.FAILED_PRECONDITION) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
                         // Missing composite index: use fallback so items don't vanish
->>>>>>> 0af30b8 (Added some security measures)
-=======
-                        // Missing composite index: use fallback so items don't vanish
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
                         reg?.remove()
                         listenFallback()
                         trySend(emptyList())
@@ -114,87 +70,34 @@ class FirebasePollRepository(
                     }
                     return@addSnapshotListener
                 }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
                 val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
-=======
-                val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
-=======
 
-                val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
->>>>>>> 5f6ea81 (Updated App Icon)
-
-                // 🔥 NEW: Cache results locally
+                // 🔥 Cache results locally
                 list.forEach { pollCache[it.id] = it }
 
-<<<<<<< HEAD
-=======
-                val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
->>>>>>> 0af30b8 (Added some security measures)
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
                 trySend(list)
             }
         }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
         // Start ordered (preferred); fall back if index is missing
->>>>>>> 0af30b8 (Added some security measures)
-=======
-        // Start ordered (preferred); fall back if index is missing
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
         listenOrdered()
         awaitClose { reg?.remove() }
     }
 
     override fun observePoll(pollId: String): Flow<Poll?> = callbackFlow {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        //  NEW: Serve from cache first if available
+        // Serve from cache first if available
         pollCache[pollId]?.let { trySend(it) }
 
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-        //  NEW: Serve from cache first if available
-        pollCache[pollId]?.let { trySend(it) }
-
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
         val reg = polls.document(pollId).addSnapshotListener { snap, err ->
             if (err != null) {
                 Log.e(TAG, "observePoll failed: ${err.message}", err)
-                trySend(null); return@addSnapshotListener
+                trySend(null)
+                return@addSnapshotListener
             }
-<<<<<<< HEAD
-<<<<<<< HEAD
             val poll = snap?.toPoll()
-
-            //  NEW: Update cache
             if (poll != null) pollCache[poll.id] = poll
-
             trySend(poll)
-=======
-            trySend(snap?.toPoll())
->>>>>>> 0af30b8 (Added some security measures)
-=======
-            trySend(snap?.toPoll())
-=======
-            val poll = snap?.toPoll()
-
-            //  NEW: Update cache
-            if (poll != null) pollCache[poll.id] = poll
-
-            trySend(poll)
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
         }
         awaitClose { reg.remove() }
     }
@@ -205,7 +108,8 @@ class FirebasePollRepository(
             .addSnapshotListener { snap, err ->
                 if (err != null) {
                     Log.e(TAG, "observeResults failed: ${err.message}", err)
-                    trySend(emptyMap()); return@addSnapshotListener
+                    trySend(emptyMap())
+                    return@addSnapshotListener
                 }
                 val counts = mutableMapOf<String, Int>()
                 snap?.documents?.forEach { d ->
@@ -227,51 +131,21 @@ class FirebasePollRepository(
         closesAtMillis: Long?,
         isActive: Boolean
     ): CreatePollResult {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        val trace: Trace = FirebasePerformance.getInstance().newTrace("create_poll_trace") // NEW: Trace start
+        val trace: Trace = FirebasePerformance.getInstance().newTrace("create_poll_trace")
         trace.start()
 
-        val trimmedOptions = options.map { it.copy(id = it.id.trim(), text = it.text.trim()) }
-        if (title.isBlank()) return CreatePollResult.Error("Title is required")
-        if (trimmedOptions.size < 2) return CreatePollResult.Error("Add at least two options")
-=======
-=======
->>>>>>> 5f6ea81 (Updated App Icon)
         val trimmedOptions = options.map { it.copy(id = it.id.trim(), text = it.text.trim()) }
         if (title.isBlank()) return CreatePollResult.Error("Title is required")
         if (trimmedOptions.size < 2) return CreatePollResult.Error("Add at least two options")
         if (trimmedOptions.any { it.id.isBlank() || it.text.isBlank() }) {
             return CreatePollResult.Error("Each option needs an id and text")
         }
-<<<<<<< HEAD
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-        val trace: Trace = FirebasePerformance.getInstance().newTrace("create_poll_trace") // NEW: Trace start
-        trace.start()
-
-        val trimmedOptions = options.map { it.copy(id = it.id.trim(), text = it.text.trim()) }
-        if (title.isBlank()) return CreatePollResult.Error("Title is required")
-        if (trimmedOptions.size < 2) return CreatePollResult.Error("Add at least two options")
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
 
         val data = hashMapOf(
             "title" to title.trim(),
             "description" to description.trim(),
             "options" to trimmedOptions.map { mapOf("id" to it.id, "text" to it.text) },
             "createdBy" to createdByUid,
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-            // Rules expect numeric (int/long), not a Firestore timestamp
->>>>>>> 0af30b8 (Added some security measures)
-=======
-            // Rules expect numeric (int/long), not a Firestore timestamp
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
             "createdAt" to System.currentTimeMillis(),
             "closesAt" to closesAtMillis,
             "isActive" to isActive
@@ -280,36 +154,14 @@ class FirebasePollRepository(
         return try {
             val doc = polls.document()
             doc.set(data).await()
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-            //  NEW: Add to cache
             val newPoll = Poll(doc.id, title, description, trimmedOptions, createdByUid, System.currentTimeMillis(), closesAtMillis, isActive)
             pollCache[newPoll.id] = newPoll
 
-            trace.stop() //  NEW: Trace stop
+            trace.stop()
             CreatePollResult.Success(doc.id)
         } catch (e: Exception) {
             trace.stop()
-=======
-            CreatePollResult.Success(doc.id)
-        } catch (e: Exception) {
->>>>>>> 0af30b8 (Added some security measures)
-=======
-            CreatePollResult.Success(doc.id)
-        } catch (e: Exception) {
-=======
-
-            //  NEW: Add to cache
-            val newPoll = Poll(doc.id, title, description, trimmedOptions, createdByUid, System.currentTimeMillis(), closesAtMillis, isActive)
-            pollCache[newPoll.id] = newPoll
-
-            trace.stop() //  NEW: Trace stop
-            CreatePollResult.Success(doc.id)
-        } catch (e: Exception) {
-            trace.stop()
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
             CreatePollResult.Error(e.message ?: "Failed to create poll")
         }
     }
@@ -322,20 +174,9 @@ class FirebasePollRepository(
         closesAtMillis: Long?,
         isActive: Boolean?
     ): OpResult {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        val trace = FirebasePerformance.getInstance().newTrace("update_poll_trace") //  NEW
+        val trace = FirebasePerformance.getInstance().newTrace("update_poll_trace")
         trace.start()
 
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-        val trace = FirebasePerformance.getInstance().newTrace("update_poll_trace") //  NEW
-        trace.start()
-
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
         val updates = HashMap<String, Any?>()
         title?.let { updates["title"] = it }
         description?.let { updates["description"] = it }
@@ -354,68 +195,25 @@ class FirebasePollRepository(
 
         return try {
             polls.document(pollId).update(updates as Map<String, Any>).await()
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-            pollCache.remove(pollId) // 🔥 NEW: Invalidate cache
+            pollCache.remove(pollId) // Invalidate cache
             trace.stop()
             OpResult.Success
         } catch (e: Exception) {
             trace.stop()
-=======
-            OpResult.Success
-        } catch (e: Exception) {
->>>>>>> 0af30b8 (Added some security measures)
-=======
-            OpResult.Success
-        } catch (e: Exception) {
-=======
-
-            pollCache.remove(pollId) // 🔥 NEW: Invalidate cache
-            trace.stop()
-            OpResult.Success
-        } catch (e: Exception) {
-            trace.stop()
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
             OpResult.Error(e.message ?: "Failed to update poll")
         }
     }
 
     override suspend fun deletePoll(pollId: String): OpResult {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        val trace = FirebasePerformance.getInstance().newTrace("delete_poll_trace") //  NEW
+        val trace = FirebasePerformance.getInstance().newTrace("delete_poll_trace")
         trace.start()
         return try {
             polls.document(pollId).delete().await()
-            pollCache.remove(pollId) //  NEW: Remove from cache
+            pollCache.remove(pollId)
             trace.stop()
             OpResult.Success
         } catch (e: Exception) {
             trace.stop()
-=======
-=======
->>>>>>> 5f6ea81 (Updated App Icon)
-        return try {
-            polls.document(pollId).delete().await()
-            OpResult.Success
-        } catch (e: Exception) {
-<<<<<<< HEAD
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-        val trace = FirebasePerformance.getInstance().newTrace("delete_poll_trace") //  NEW
-        trace.start()
-        return try {
-            polls.document(pollId).delete().await()
-            pollCache.remove(pollId) //  NEW: Remove from cache
-            trace.stop()
-            OpResult.Success
-        } catch (e: Exception) {
-            trace.stop()
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
             OpResult.Error(e.message ?: "Failed to delete poll")
         }
     }
@@ -425,18 +223,8 @@ class FirebasePollRepository(
         optionId: String,
         voterUid: String
     ): OpResult {
-<<<<<<< HEAD
-<<<<<<< HEAD
-        val trace = FirebasePerformance.getInstance().newTrace("cast_vote_trace") //  NEW
+        val trace = FirebasePerformance.getInstance().newTrace("cast_vote_trace")
         trace.start()
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-        val trace = FirebasePerformance.getInstance().newTrace("cast_vote_trace") //  NEW
-        trace.start()
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
         return try {
             val vote = mapOf(
                 "optionId" to optionId,
@@ -444,8 +232,6 @@ class FirebasePollRepository(
             )
             polls.document(pollId)
                 .collection("votes")
-<<<<<<< HEAD
-<<<<<<< HEAD
                 .document(voterUid)
                 .set(vote)
                 .await()
@@ -453,27 +239,6 @@ class FirebasePollRepository(
             OpResult.Success
         } catch (e: Exception) {
             trace.stop()
-=======
-=======
->>>>>>> 5f6ea81 (Updated App Icon)
-                .document(voterUid) // one doc per voter -> prevents double vote
-                .set(vote)          // will fail if already exists (per rules)
-                .await()
-            OpResult.Success
-        } catch (e: Exception) {
-<<<<<<< HEAD
->>>>>>> 0af30b8 (Added some security measures)
-=======
-=======
-                .document(voterUid)
-                .set(vote)
-                .await()
-            trace.stop()
-            OpResult.Success
-        } catch (e: Exception) {
-            trace.stop()
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
             OpResult.Error(e.message ?: "Failed to cast vote")
         }
     }
