@@ -12,9 +12,15 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
     private val col get() = db.collection("suggestions")
 
     override suspend fun createSuggestion(
-        title: String, description: String, createdByUid: String, createdByName: String
+        title: String,
+        description: String,
+        createdByUid: String,
+        createdByName: String
     ): SuggestResult {
-        val t = title.trim(); val d = description.trim(); val n = createdByName.trim()
+        val t = title.trim()
+        val d = description.trim()
+        val n = createdByName.trim()
+
         if (t.isBlank()) return SuggestResult.Error("Title is required")
         if (d.isBlank()) return SuggestResult.Error("Description is required")
         if (n.isBlank()) return SuggestResult.Error("Your name or email is required")
@@ -22,9 +28,12 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
         return try {
             val ref = col.add(
                 mapOf(
-                    "title" to t, "description" to d,
-                    "createdBy" to createdByUid, "createdByName" to n,
-                    "createdAt" to System.currentTimeMillis(), "status" to "pending"
+                    "title" to t,
+                    "description" to d,
+                    "createdBy" to createdByUid,
+                    "createdByName" to n,
+                    "createdAt" to System.currentTimeMillis(),
+                    "status" to "pending"
                 )
             ).await()
             SuggestResult.Success(ref.id)
@@ -36,7 +45,10 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
     override fun observeAllSuggestions(): Flow<List<Suggestion>> = callbackFlow {
         val reg = col.orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snap, err ->
-                if (err != null) { trySend(emptyList()); return@addSnapshotListener }
+                if (err != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
                 val list = snap?.documents?.mapNotNull { d ->
                     val obj = d.toObject(Suggestion::class.java) ?: return@mapNotNull null
                     obj.copy(id = d.id)
@@ -47,7 +59,9 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
     }
 
     override suspend fun updateStatus(id: String, newStatus: String): SuggOp {
-        if (newStatus !in listOf("accepted", "declined")) return SuggOp.Error("Invalid status")
+        if (newStatus !in listOf("accepted", "declined"))
+            return SuggOp.Error("Invalid status")
+
         return try {
             val doc = col.document(id)
             db.runTransaction { tx ->
@@ -61,11 +75,6 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
             SuggOp.Error(e.message ?: "Failed to update status")
         }
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 5f6ea81 (Updated App Icon)
 
     override suspend fun delete(id: String): SuggOp {
         return try {
@@ -75,12 +84,4 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
             SuggOp.Error(e.message ?: "Failed to delete suggestion")
         }
     }
-
-
-<<<<<<< HEAD
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
 }
