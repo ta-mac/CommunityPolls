@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-<resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
-</resources>
-=======
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#FDB700</color>
 </resources>
->>>>>>> 71da6fb (Updated App Icon)
