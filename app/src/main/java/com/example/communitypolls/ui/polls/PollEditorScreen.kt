@@ -5,6 +5,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+<<<<<<< HEAD
+=======
+import androidx.compose.material.icons.filled.ArrowBack
+>>>>>>> 71da6fb (Updated App Icon)
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -12,6 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+<<<<<<< HEAD
+=======
+@OptIn(ExperimentalMaterial3Api::class)
+>>>>>>> 71da6fb (Updated App Icon)
 @Composable
 fun PollEditorScreen(
     state: PollEditorState,
@@ -26,15 +34,26 @@ fun PollEditorScreen(
     onSave: () -> Unit,
     onDismissError: () -> Unit,
 ) {
+<<<<<<< HEAD
     if (state.error != null) {
         AlertDialog(
             onDismissRequest = onDismissError,
             confirmButton = { TextButton(onClick = onDismissError) { Text("OK") } },
+=======
+    // Show error dialog if present
+    if (state.error != null) {
+        AlertDialog(
+            onDismissRequest = onDismissError,
+            confirmButton = {
+                TextButton(onClick = onDismissError) { Text("OK") }
+            },
+>>>>>>> 71da6fb (Updated App Icon)
             title = { Text("Problem saving") },
             text = { Text(state.error) }
         )
     }
 
+<<<<<<< HEAD
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,6 +112,96 @@ fun PollEditorScreen(
 
         Button(onClick = onSave, enabled = !state.loading) {
             Text(if (state.loading) "Saving…" else "Save")
+=======
+    // Scaffold structure with TopAppBar to fix cut-off title issue
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Create Poll", style = MaterialTheme.typography.titleLarge) },
+                navigationIcon = {
+                    IconButton(onClick = onDismissError) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Better input layout with Material 3 spacing
+            OutlinedTextField(
+                value = state.title,
+                onValueChange = onTitleChange,
+                label = { Text("Title") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = state.description,
+                onValueChange = onDescriptionChange,
+                label = { Text("Description (optional)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Text("Options", style = MaterialTheme.typography.titleMedium)
+
+            // Wrap each option input in a Card for better visual grouping
+            state.options.forEachIndexed { idx, option ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        OptionRow(
+                            index = idx,
+                            id = option.id,
+                            text = option.text,
+                            canRemove = state.options.size > 2,
+                            onIdChange = { onOptionIdChange(idx, it) },
+                            onTextChange = { onOptionTextChange(idx, it) },
+                            onRemove = { onRemoveOption(idx) }
+                        )
+                    }
+                }
+            }
+
+            TextButton(onClick = onAddOption) {
+                Text("Add option")
+            }
+
+            // Active toggle with aligned label
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Active")
+                Spacer(Modifier.width(12.dp))
+                Switch(checked = state.isActive, onCheckedChange = onToggleActive)
+            }
+
+            // Better auto-close presets with spacing
+            Column {
+                Text("Auto close")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = state.closeAfterHours == null, onClick = { onSelectClosePreset(null) }, label = { Text("Never") })
+                    FilterChip(selected = state.closeAfterHours == 1, onClick = { onSelectClosePreset(1) }, label = { Text("1h") })
+                    FilterChip(selected = state.closeAfterHours == 24, onClick = { onSelectClosePreset(24) }, label = { Text("24h") })
+                    FilterChip(selected = state.closeAfterHours == 72, onClick = { onSelectClosePreset(72) }, label = { Text("3d") })
+                }
+            }
+
+            // Full-width primary button for Save
+            Button(
+                onClick = onSave,
+                enabled = !state.loading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (state.loading) "Saving…" else "Save")
+            }
+>>>>>>> 71da6fb (Updated App Icon)
         }
     }
 }
@@ -107,6 +216,7 @@ private fun OptionRow(
     onTextChange: (String) -> Unit,
     onRemove: () -> Unit
 ) {
+<<<<<<< HEAD
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = id,
@@ -127,6 +237,29 @@ private fun OptionRow(
             Spacer(Modifier.width(8.dp))
             IconButton(onClick = onRemove) {
                 Icon(Icons.Filled.Delete, contentDescription = "Remove option")
+=======
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Single-column layout instead of cramped row
+        OutlinedTextField(
+            value = id,
+            onValueChange = onIdChange,
+            label = { Text("Option ID") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = text,
+            onValueChange = onTextChange,
+            label = { Text("Option Text") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (canRemove) {
+            TextButton(onClick = onRemove) {
+                Icon(Icons.Filled.Delete, contentDescription = "Remove option")
+                Spacer(Modifier.width(4.dp))
+                Text("Remove option")
+>>>>>>> 71da6fb (Updated App Icon)
             }
         }
     }

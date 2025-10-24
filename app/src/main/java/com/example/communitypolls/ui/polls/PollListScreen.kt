@@ -45,6 +45,10 @@ fun PollListRoute(
     )
 }
 
+<<<<<<< HEAD
+=======
+@OptIn(ExperimentalMaterial3Api::class)
+>>>>>>> 71da6fb (Updated App Icon)
 @Composable
 fun PollListScreen(
     state: PollListUiState,
@@ -56,6 +60,7 @@ fun PollListScreen(
     onCreatePoll: (() -> Unit)?,
     sort: PollSort
 ) {
+<<<<<<< HEAD
     when {
         state.loading -> LoadingState()
         state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
@@ -111,6 +116,37 @@ private fun EmptyState(onCreatePoll: (() -> Unit)?) {
                 Spacer(Modifier.height(12.dp))
                 if (onCreatePoll != null) {
                     Button(onClick = onCreatePoll) { Text("+ Create Poll") }
+=======
+    // Wrap in Scaffold to add TopAppBar
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Polls", style = MaterialTheme.typography.titleLarge) }
+            )
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when {
+                state.loading -> LoadingState()
+                state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
+                state.items.isEmpty() -> EmptyState(onCreatePoll)
+                else -> {
+                    val itemsSorted = remember(state.items, sort) {
+                        when (sort) {
+                            PollSort.NEWEST   -> state.items.sortedByDescending { it.createdAt }
+                            PollSort.OLDEST   -> state.items.sortedBy { it.createdAt }
+                            PollSort.TITLE_AZ -> state.items.sortedBy { it.title.lowercase() }
+                            PollSort.TITLE_ZA -> state.items.sortedByDescending { it.title.lowercase() }
+                        }
+                    }
+                    PollList(
+                        items = itemsSorted,
+                        onPollClick = onPollClick,
+                        showAdminActions = showAdminActions,
+                        onEditPoll = onEditPoll,
+                        onDeletePoll = onDeletePoll
+                    )
+>>>>>>> 71da6fb (Updated App Icon)
                 }
             }
         }
@@ -161,7 +197,12 @@ private fun PollItemCard(
         shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
+<<<<<<< HEAD
         Column(Modifier.padding(16.dp)) {
+=======
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header row with title and overflow icon
+>>>>>>> 71da6fb (Updated App Icon)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Text(
                     poll.title.ifBlank { "(Untitled poll)" },
@@ -169,6 +210,7 @@ private fun PollItemCard(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
+<<<<<<< HEAD
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = null,
@@ -177,6 +219,13 @@ private fun PollItemCard(
             }
 
             Spacer(Modifier.height(4.dp))
+=======
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            // Description
+>>>>>>> 71da6fb (Updated App Icon)
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodyMedium,
@@ -184,7 +233,13 @@ private fun PollItemCard(
                 overflow = TextOverflow.Ellipsis
             )
 
+<<<<<<< HEAD
             Spacer(Modifier.height(8.dp))
+=======
+            Spacer(Modifier.height(10.dp))
+
+            // Status + options summary
+>>>>>>> 71da6fb (Updated App Icon)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StatusDot(color = if (poll.isActive) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline)
                 Spacer(Modifier.width(6.dp))
@@ -195,14 +250,35 @@ private fun PollItemCard(
                 )
             }
 
+<<<<<<< HEAD
             if (showAdminActions) {
                 Spacer(Modifier.height(12.dp))
+=======
+            // Admin action buttons
+            if (showAdminActions) {
+                Spacer(Modifier.height(14.dp))
+>>>>>>> 71da6fb (Updated App Icon)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+<<<<<<< HEAD
                     OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
                     OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Delete") }
+=======
+                    OutlinedButton(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Edit")
+                    }
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Delete")
+                    }
+>>>>>>> 71da6fb (Updated App Icon)
                 }
             }
         }
@@ -218,10 +294,20 @@ private fun StatusDot(color: Color, size: Dp = 10.dp) {
             .background(color)
     )
 }
+<<<<<<< HEAD
 @Composable
 fun LoadingState() {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
+=======
+
+@Composable
+fun LoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+>>>>>>> 71da6fb (Updated App Icon)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -234,7 +320,13 @@ fun LoadingState() {
 @Composable
 fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
+<<<<<<< HEAD
         modifier = Modifier.fillMaxSize().padding(24.dp),
+=======
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+>>>>>>> 71da6fb (Updated App Icon)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -243,3 +335,37 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
         Button(onClick = onRetry) { Text("Retry") }
     }
 }
+<<<<<<< HEAD
+=======
+
+@Composable
+private fun EmptyState(onCreatePoll: (() -> Unit)?) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("🗒️", style = MaterialTheme.typography.headlineLarge)
+                Text("No polls yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(12.dp))
+                if (onCreatePoll != null) {
+                    Button(onClick = onCreatePoll) { Text("+ Create Poll") }
+                }
+            }
+        }
+    }
+}
+>>>>>>> 71da6fb (Updated App Icon)

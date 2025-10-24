@@ -61,4 +61,18 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
             SuggOp.Error(e.message ?: "Failed to update status")
         }
     }
+<<<<<<< HEAD
+=======
+
+    override suspend fun delete(id: String): SuggOp {
+        return try {
+            col.document(id).delete().await()
+            SuggOp.Success
+        } catch (e: Exception) {
+            SuggOp.Error(e.message ?: "Failed to delete suggestion")
+        }
+    }
+
+
+>>>>>>> 71da6fb (Updated App Icon)
 }
