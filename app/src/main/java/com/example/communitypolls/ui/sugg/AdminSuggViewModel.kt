@@ -41,6 +41,10 @@ class AdminSuggViewModel(
         }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 5f6ea81 (Updated App Icon)
 
     fun delete(id: String) {
         viewModelScope.launch {
@@ -55,6 +59,10 @@ class AdminSuggViewModel(
         }
     }
 
+<<<<<<< HEAD
 =======
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
 }

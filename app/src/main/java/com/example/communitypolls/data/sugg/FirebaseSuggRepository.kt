@@ -62,6 +62,10 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
         }
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 5f6ea81 (Updated App Icon)
 
     override suspend fun delete(id: String): SuggOp {
         return try {
@@ -73,6 +77,10 @@ class FirebaseSuggRepository(private val db: FirebaseFirestore) : SuggestionRepo
     }
 
 
+<<<<<<< HEAD
 =======
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
 }

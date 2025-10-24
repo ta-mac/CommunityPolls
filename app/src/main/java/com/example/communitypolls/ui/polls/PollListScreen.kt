@@ -46,9 +46,15 @@ fun PollListRoute(
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 @OptIn(ExperimentalMaterial3Api::class)
 =======
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+=======
+@OptIn(ExperimentalMaterial3Api::class)
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
 @Composable
 fun PollListScreen(
     state: PollListUiState,
@@ -60,6 +66,7 @@ fun PollListScreen(
     onCreatePoll: (() -> Unit)?,
     sort: PollSort
 ) {
+<<<<<<< HEAD
 <<<<<<< HEAD
     // Wrap in Scaffold to add TopAppBar
     Scaffold(
@@ -91,6 +98,8 @@ fun PollListScreen(
                         onDeletePoll = onDeletePoll
                     )
 =======
+=======
+>>>>>>> 5f6ea81 (Updated App Icon)
     when {
         state.loading -> LoadingState()
         state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
@@ -146,7 +155,41 @@ private fun EmptyState(onCreatePoll: (() -> Unit)?) {
                 Spacer(Modifier.height(12.dp))
                 if (onCreatePoll != null) {
                     Button(onClick = onCreatePoll) { Text("+ Create Poll") }
+<<<<<<< HEAD
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+=======
+    // Wrap in Scaffold to add TopAppBar
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Polls", style = MaterialTheme.typography.titleLarge) }
+            )
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            when {
+                state.loading -> LoadingState()
+                state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
+                state.items.isEmpty() -> EmptyState(onCreatePoll)
+                else -> {
+                    val itemsSorted = remember(state.items, sort) {
+                        when (sort) {
+                            PollSort.NEWEST   -> state.items.sortedByDescending { it.createdAt }
+                            PollSort.OLDEST   -> state.items.sortedBy { it.createdAt }
+                            PollSort.TITLE_AZ -> state.items.sortedBy { it.title.lowercase() }
+                            PollSort.TITLE_ZA -> state.items.sortedByDescending { it.title.lowercase() }
+                        }
+                    }
+                    PollList(
+                        items = itemsSorted,
+                        onPollClick = onPollClick,
+                        showAdminActions = showAdminActions,
+                        onEditPoll = onEditPoll,
+                        onDeletePoll = onDeletePoll
+                    )
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
                 }
             }
         }
@@ -198,11 +241,19 @@ private fun PollItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
 <<<<<<< HEAD
+<<<<<<< HEAD
         Column(modifier = Modifier.padding(16.dp)) {
             // Header row with title and overflow icon
 =======
         Column(Modifier.padding(16.dp)) {
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+        Column(Modifier.padding(16.dp)) {
+=======
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header row with title and overflow icon
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Text(
                     poll.title.ifBlank { "(Untitled poll)" },
@@ -211,12 +262,15 @@ private fun PollItemCard(
                     modifier = Modifier.weight(1f)
                 )
 <<<<<<< HEAD
+<<<<<<< HEAD
             }
 
             Spacer(Modifier.height(6.dp))
 
             // Description
 =======
+=======
+>>>>>>> 5f6ea81 (Updated App Icon)
                 Icon(
                     imageVector = Icons.Default.MoreVert,
                     contentDescription = null,
@@ -225,7 +279,17 @@ private fun PollItemCard(
             }
 
             Spacer(Modifier.height(4.dp))
+<<<<<<< HEAD
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+=======
+            }
+
+            Spacer(Modifier.height(6.dp))
+
+            // Description
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodyMedium,
@@ -234,12 +298,21 @@ private fun PollItemCard(
             )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             Spacer(Modifier.height(10.dp))
 
             // Status + options summary
 =======
             Spacer(Modifier.height(8.dp))
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+            Spacer(Modifier.height(8.dp))
+=======
+            Spacer(Modifier.height(10.dp))
+
+            // Status + options summary
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StatusDot(color = if (poll.isActive) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline)
                 Spacer(Modifier.width(6.dp))
@@ -251,6 +324,7 @@ private fun PollItemCard(
             }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             // Admin action buttons
             if (showAdminActions) {
                 Spacer(Modifier.height(14.dp))
@@ -258,10 +332,20 @@ private fun PollItemCard(
             if (showAdminActions) {
                 Spacer(Modifier.height(12.dp))
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+            if (showAdminActions) {
+                Spacer(Modifier.height(12.dp))
+=======
+            // Admin action buttons
+            if (showAdminActions) {
+                Spacer(Modifier.height(14.dp))
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+<<<<<<< HEAD
 <<<<<<< HEAD
                     OutlinedButton(
                         onClick = onEdit,
@@ -279,6 +363,24 @@ private fun PollItemCard(
                     OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
                     OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Delete") }
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+                    OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
+                    OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Delete") }
+=======
+                    OutlinedButton(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Edit")
+                    }
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Delete")
+                    }
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
                 }
             }
         }
@@ -295,6 +397,7 @@ private fun StatusDot(color: Color, size: Dp = 10.dp) {
     )
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 @Composable
 fun LoadingState() {
@@ -303,11 +406,25 @@ fun LoadingState() {
             .fillMaxSize()
             .padding(24.dp),
 =======
+=======
+>>>>>>> 5f6ea81 (Updated App Icon)
 @Composable
 fun LoadingState() {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
+<<<<<<< HEAD
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+=======
+
+@Composable
+fun LoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -321,12 +438,21 @@ fun LoadingState() {
 fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
 <<<<<<< HEAD
+<<<<<<< HEAD
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
 =======
         modifier = Modifier.fillMaxSize().padding(24.dp),
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+=======
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -336,6 +462,10 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
     }
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 5f6ea81 (Updated App Icon)
 
 @Composable
 private fun EmptyState(onCreatePoll: (() -> Unit)?) {
@@ -367,5 +497,9 @@ private fun EmptyState(onCreatePoll: (() -> Unit)?) {
         }
     }
 }
+<<<<<<< HEAD
 =======
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)

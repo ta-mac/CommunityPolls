@@ -23,8 +23,15 @@ interface SuggestionRepository {
     fun observeAllSuggestions(): Flow<List<Suggestion>>
     suspend fun updateStatus(id: String, newStatus: String): SuggOp
 <<<<<<< HEAD
+<<<<<<< HEAD
     suspend fun delete(id: String): SuggOp
 
 =======
 >>>>>>> 0af30b8 (Added some security measures)
+=======
+=======
+    suspend fun delete(id: String): SuggOp
+
+>>>>>>> 71da6fb (Updated App Icon)
+>>>>>>> 5f6ea81 (Updated App Icon)
 }
