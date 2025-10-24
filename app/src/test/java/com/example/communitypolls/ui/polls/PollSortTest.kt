@@ -5,8 +5,24 @@ import com.example.communitypolls.model.PollOption
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
+// Enum for sort options
+enum class PollSort {
+    NEWEST, OLDEST, TITLE_AZ, TITLE_ZA
+}
+
+// Sorting function
+fun sortPolls(polls: List<Poll>, sort: PollSort): List<Poll> {
+    return when (sort) {
+        PollSort.NEWEST -> polls.sortedByDescending { it.createdAt }
+        PollSort.OLDEST -> polls.sortedBy { it.createdAt }
+        PollSort.TITLE_AZ -> polls.sortedBy { it.title.lowercase() }
+        PollSort.TITLE_ZA -> polls.sortedByDescending { it.title.lowercase() }
+    }
+}
+
 class PollSortTest {
 
+    // Helper to create polls
     private fun p(id: String, title: String, createdAt: Long) = Poll(
         id = id,
         title = title,

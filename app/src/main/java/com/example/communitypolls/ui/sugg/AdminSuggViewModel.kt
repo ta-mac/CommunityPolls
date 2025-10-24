@@ -30,39 +30,27 @@ class AdminSuggViewModel(
         }
     }
 
-    fun clearError() { _state.value = _state.value.copy(error = null) }
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
+    }
 
     fun setStatus(id: String, status: String) {
         viewModelScope.launch {
             when (repo.updateStatus(id, status)) {
                 is SuggOp.Success -> Unit
-                is SuggOp.Error   -> _state.value = _state.value.copy(error = "Could not set $status")
+                is SuggOp.Error -> _state.value = _state.value.copy(error = "Could not set $status")
             }
         }
     }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 5f6ea81 (Updated App Icon)
 
     fun delete(id: String) {
         viewModelScope.launch {
             when (repo.delete(id)) {
                 is SuggOp.Success -> {
-                    // Let firestore observer auto-update the list
+                    // Firestore observer will auto-update the list
                 }
-                is SuggOp.Error -> {
-                    _state.value = _state.value.copy(error = "Could not delete suggestion")
-                }
+                is SuggOp.Error -> _state.value = _state.value.copy(error = "Could not delete suggestion")
             }
         }
     }
-
-<<<<<<< HEAD
-=======
->>>>>>> 0af30b8 (Added some security measures)
-=======
->>>>>>> 71da6fb (Updated App Icon)
->>>>>>> 5f6ea81 (Updated App Icon)
 }

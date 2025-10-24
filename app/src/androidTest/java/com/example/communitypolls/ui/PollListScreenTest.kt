@@ -5,6 +5,7 @@ import androidx.compose.ui.test.*
 import com.example.communitypolls.model.Poll
 import com.example.communitypolls.ui.polls.PollListScreen
 import com.example.communitypolls.ui.polls.PollListUiState
+import com.example.communitypolls.ui.polls.PollSort
 import org.junit.Rule
 import org.junit.Test
 
@@ -22,7 +23,9 @@ class PollListScreenTest {
                 onPollClick = {},
                 showAdminActions = false,
                 onEditPoll = {},
-                onDeletePoll = {}
+                onDeletePoll = {},
+                sort = PollSort.NEWEST,
+                onCreatePoll = {}
             )
         }
 
@@ -40,7 +43,9 @@ class PollListScreenTest {
                 onPollClick = {},
                 showAdminActions = false,
                 onEditPoll = {},
-                onDeletePoll = {}
+                onDeletePoll = {},
+                sort = PollSort.NEWEST,
+                onCreatePoll = {}
             )
         }
 
@@ -53,8 +58,8 @@ class PollListScreenTest {
     fun list_rendersItems_andOnPollClickFires() {
         var clickedId: String? = null
         val items = listOf(
-            Poll(id = "p1", title = "Favorite fruit", description = "Pick one", createdAt = 0L, isActive = true, options = emptyList()),
-            Poll(id = "p2", title = "Best OS", description = "Vote!", createdAt = 0L, isActive = true, options = emptyList())
+            Poll(id = "p1", title = "Favorite fruit", description = "Pick one", createdAt = 0L, isActive = true, options = emptyList(), createdBy = "", closesAt = null),
+            Poll(id = "p2", title = "Best OS", description = "Vote!", createdAt = 0L, isActive = true, options = emptyList(), createdBy = "", closesAt = null)
         )
 
         rule.setContent {
@@ -64,14 +69,15 @@ class PollListScreenTest {
                 onPollClick = { clickedId = it },
                 showAdminActions = false,
                 onEditPoll = {},
-                onDeletePoll = {}
+                onDeletePoll = {},
+                sort = PollSort.NEWEST,
+                onCreatePoll = {}
             )
         }
 
         rule.onNodeWithText("Favorite fruit").assertIsDisplayed()
         rule.onNodeWithText("Best OS").assertIsDisplayed()
 
-        // Click first card (by its title)
         rule.onNodeWithText("Favorite fruit").performClick()
         assert(clickedId == "p1")
     }
@@ -81,7 +87,7 @@ class PollListScreenTest {
         var edited: String? = null
         var deleted: String? = null
         val items = listOf(
-            Poll(id = "p1", title = "Editable poll", description = "", createdAt = 0L, isActive = true, options = emptyList())
+            Poll(id = "p1", title = "Editable poll", description = "", createdAt = 0L, isActive = true, options = emptyList(), createdBy = "", closesAt = null)
         )
 
         rule.setContent {
@@ -91,7 +97,9 @@ class PollListScreenTest {
                 onPollClick = {},
                 showAdminActions = true,
                 onEditPoll = { edited = it },
-                onDeletePoll = { deleted = it }
+                onDeletePoll = { deleted = it },
+                sort = PollSort.NEWEST,
+                onCreatePoll = {}
             )
         }
 
