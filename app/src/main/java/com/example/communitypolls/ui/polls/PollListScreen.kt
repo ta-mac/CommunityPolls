@@ -57,7 +57,6 @@ fun PollListScreen(
     onCreatePoll: (() -> Unit)?,
     sort: PollSort
 ) {
-    // Wrap in Scaffold to add TopAppBar
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -137,7 +136,6 @@ private fun PollItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header row with title and overflow icon
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Text(
                     poll.title.ifBlank { "(Untitled poll)" },
@@ -145,11 +143,15 @@ private fun PollItemCard(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(Modifier.height(6.dp))
 
-            // Description
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodyMedium,
@@ -159,7 +161,6 @@ private fun PollItemCard(
 
             Spacer(Modifier.height(10.dp))
 
-            // Status + options summary
             Row(verticalAlignment = Alignment.CenterVertically) {
                 StatusDot(color = if (poll.isActive) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline)
                 Spacer(Modifier.width(6.dp))
@@ -170,25 +171,14 @@ private fun PollItemCard(
                 )
             }
 
-            // Admin action buttons
             if (showAdminActions) {
                 Spacer(Modifier.height(14.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = onEdit,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Edit")
-                    }
-                    OutlinedButton(
-                        onClick = onDelete,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Delete")
-                    }
+                    OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
+                    OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Delete") }
                 }
             }
         }
@@ -208,9 +198,7 @@ private fun StatusDot(color: Color, size: Dp = 10.dp) {
 @Composable
 fun LoadingState() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -223,9 +211,7 @@ fun LoadingState() {
 @Composable
 fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -238,16 +224,12 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
 @Composable
 private fun EmptyState(onCreatePoll: (() -> Unit)?) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             shape = MaterialTheme.shapes.extraLarge
         ) {
             Column(
@@ -257,6 +239,7 @@ private fun EmptyState(onCreatePoll: (() -> Unit)?) {
             ) {
                 Text("🗒️", style = MaterialTheme.typography.headlineLarge)
                 Text("No polls yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text("Create your first poll to get started!", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(12.dp))
                 if (onCreatePoll != null) {
                     Button(onClick = onCreatePoll) { Text("+ Create Poll") }

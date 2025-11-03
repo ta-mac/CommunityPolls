@@ -22,17 +22,16 @@ fun AdminSuggRoute(onClose: () -> Unit) {
     val state by vm.state.collectAsState()
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
 
-    // Handle error if any
+    // Clear error if any
     if (state.error != null) {
         vm.clearError()
     }
 
-    // Main screen with admin suggestion actions
     AdminSuggScreen(
         state = state,
         onAccept = { vm.setStatus(it, "accepted") },
         onDecline = { vm.setStatus(it, "declined") },
-        onDelete = { pendingDeleteId = it }, // Show confirm dialog instead of immediate delete
+        onDelete = { pendingDeleteId = it },
         onBack = onClose
     )
 

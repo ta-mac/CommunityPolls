@@ -7,6 +7,7 @@ sealed interface SuggestResult {
     data class Success(val id: String) : SuggestResult
     data class Error(val message: String) : SuggestResult
 }
+
 sealed interface SuggOp {
     data object Success : SuggOp
     data class Error(val message: String) : SuggOp
@@ -23,5 +24,4 @@ interface SuggestionRepository {
     fun observeAllSuggestions(): Flow<List<Suggestion>>
     suspend fun updateStatus(id: String, newStatus: String): SuggOp
     suspend fun delete(id: String): SuggOp
-
 }

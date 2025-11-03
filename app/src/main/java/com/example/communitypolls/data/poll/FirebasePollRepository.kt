@@ -8,8 +8,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import com.google.firebase.perf.FirebasePerformance              //  NEW: Performance monitoring
-import com.google.firebase.perf.metrics.Trace                   //  NEW: Performance tracing
+import com.google.firebase.perf.FirebasePerformance              // NEW: Performance monitoring
+import com.google.firebase.perf.metrics.Trace                   // NEW: Performance tracing
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -37,12 +37,13 @@ class FirebasePollRepository(
             reg = q.addSnapshotListener { snap, err ->
                 if (err != null) {
                     Log.e(TAG, "Fallback query failed: ${err.message}", err)
-                    trySend(emptyList()); return@addSnapshotListener
+                    trySend(emptyList())
+                    return@addSnapshotListener
                 }
 
                 val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
 
-                // 🔥 NEW: Cache results locally
+                // 🔥 Cache results locally
                 list.forEach { pollCache[it.id] = it }
 
                 trySend(list)
@@ -60,6 +61,7 @@ class FirebasePollRepository(
                     Log.e(TAG, "Ordered query failed: ${err.message}", err)
                     if (err is FirebaseFirestoreException &&
                         err.code == FirebaseFirestoreException.Code.FAILED_PRECONDITION) {
+                        // Missing composite index: use fallback so items don't vanish
                         reg?.remove()
                         listenFallback()
                         trySend(emptyList())
@@ -71,31 +73,30 @@ class FirebasePollRepository(
 
                 val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
 
-                // 🔥 NEW: Cache results locally
+                // 🔥 Cache results locally
                 list.forEach { pollCache[it.id] = it }
 
                 trySend(list)
             }
         }
 
+        // Start ordered (preferred); fall back if index is missing
         listenOrdered()
         awaitClose { reg?.remove() }
     }
 
     override fun observePoll(pollId: String): Flow<Poll?> = callbackFlow {
-        //  NEW: Serve from cache first if available
+        // Serve from cache first if available
         pollCache[pollId]?.let { trySend(it) }
 
         val reg = polls.document(pollId).addSnapshotListener { snap, err ->
             if (err != null) {
                 Log.e(TAG, "observePoll failed: ${err.message}", err)
-                trySend(null); return@addSnapshotListener
+                trySend(null)
+                return@addSnapshotListener
             }
             val poll = snap?.toPoll()
-
-            //  NEW: Update cache
             if (poll != null) pollCache[poll.id] = poll
-
             trySend(poll)
         }
         awaitClose { reg.remove() }
@@ -107,7 +108,8 @@ class FirebasePollRepository(
             .addSnapshotListener { snap, err ->
                 if (err != null) {
                     Log.e(TAG, "observeResults failed: ${err.message}", err)
-                    trySend(emptyMap()); return@addSnapshotListener
+                    trySend(emptyMap())
+                    return@addSnapshotListener
                 }
                 val counts = mutableMapOf<String, Int>()
                 snap?.documents?.forEach { d ->
@@ -129,12 +131,15 @@ class FirebasePollRepository(
         closesAtMillis: Long?,
         isActive: Boolean
     ): CreatePollResult {
-        val trace: Trace = FirebasePerformance.getInstance().newTrace("create_poll_trace") // NEW: Trace start
+        val trace: Trace = FirebasePerformance.getInstance().newTrace("create_poll_trace")
         trace.start()
 
         val trimmedOptions = options.map { it.copy(id = it.id.trim(), text = it.text.trim()) }
         if (title.isBlank()) return CreatePollResult.Error("Title is required")
         if (trimmedOptions.size < 2) return CreatePollResult.Error("Add at least two options")
+        if (trimmedOptions.any { it.id.isBlank() || it.text.isBlank() }) {
+            return CreatePollResult.Error("Each option needs an id and text")
+        }
 
         val data = hashMapOf(
             "title" to title.trim(),
@@ -150,11 +155,10 @@ class FirebasePollRepository(
             val doc = polls.document()
             doc.set(data).await()
 
-            //  NEW: Add to cache
             val newPoll = Poll(doc.id, title, description, trimmedOptions, createdByUid, System.currentTimeMillis(), closesAtMillis, isActive)
             pollCache[newPoll.id] = newPoll
 
-            trace.stop() //  NEW: Trace stop
+            trace.stop()
             CreatePollResult.Success(doc.id)
         } catch (e: Exception) {
             trace.stop()
@@ -170,7 +174,7 @@ class FirebasePollRepository(
         closesAtMillis: Long?,
         isActive: Boolean?
     ): OpResult {
-        val trace = FirebasePerformance.getInstance().newTrace("update_poll_trace") //  NEW
+        val trace = FirebasePerformance.getInstance().newTrace("update_poll_trace")
         trace.start()
 
         val updates = HashMap<String, Any?>()
@@ -191,8 +195,7 @@ class FirebasePollRepository(
 
         return try {
             polls.document(pollId).update(updates as Map<String, Any>).await()
-
-            pollCache.remove(pollId) // 🔥 NEW: Invalidate cache
+            pollCache.remove(pollId) // Invalidate cache
             trace.stop()
             OpResult.Success
         } catch (e: Exception) {
@@ -202,11 +205,11 @@ class FirebasePollRepository(
     }
 
     override suspend fun deletePoll(pollId: String): OpResult {
-        val trace = FirebasePerformance.getInstance().newTrace("delete_poll_trace") //  NEW
+        val trace = FirebasePerformance.getInstance().newTrace("delete_poll_trace")
         trace.start()
         return try {
             polls.document(pollId).delete().await()
-            pollCache.remove(pollId) //  NEW: Remove from cache
+            pollCache.remove(pollId)
             trace.stop()
             OpResult.Success
         } catch (e: Exception) {
@@ -220,7 +223,7 @@ class FirebasePollRepository(
         optionId: String,
         voterUid: String
     ): OpResult {
-        val trace = FirebasePerformance.getInstance().newTrace("cast_vote_trace") //  NEW
+        val trace = FirebasePerformance.getInstance().newTrace("cast_vote_trace")
         trace.start()
         return try {
             val vote = mapOf(

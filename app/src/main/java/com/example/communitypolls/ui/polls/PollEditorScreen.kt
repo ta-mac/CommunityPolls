@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,15 +32,12 @@ fun PollEditorScreen(
     if (state.error != null) {
         AlertDialog(
             onDismissRequest = onDismissError,
-            confirmButton = {
-                TextButton(onClick = onDismissError) { Text("OK") }
-            },
+            confirmButton = { TextButton(onClick = onDismissError) { Text("OK") } },
             title = { Text("Problem saving") },
             text = { Text(state.error) }
         )
     }
 
-    // Scaffold structure with TopAppBar to fix cut-off title issue
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -60,7 +57,6 @@ fun PollEditorScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Better input layout with Material 3 spacing
             OutlinedTextField(
                 value = state.title,
                 onValueChange = onTitleChange,
@@ -78,7 +74,6 @@ fun PollEditorScreen(
 
             Text("Options", style = MaterialTheme.typography.titleMedium)
 
-            // Wrap each option input in a Card for better visual grouping
             state.options.forEachIndexed { idx, option ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -98,29 +93,40 @@ fun PollEditorScreen(
                 }
             }
 
-            TextButton(onClick = onAddOption) {
-                Text("Add option")
-            }
+            TextButton(onClick = onAddOption) { Text("Add option") }
 
-            // Active toggle with aligned label
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Active")
                 Spacer(Modifier.width(12.dp))
                 Switch(checked = state.isActive, onCheckedChange = onToggleActive)
             }
 
-            // Better auto-close presets with spacing
             Column {
                 Text("Auto close")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected = state.closeAfterHours == null, onClick = { onSelectClosePreset(null) }, label = { Text("Never") })
-                    FilterChip(selected = state.closeAfterHours == 1, onClick = { onSelectClosePreset(1) }, label = { Text("1h") })
-                    FilterChip(selected = state.closeAfterHours == 24, onClick = { onSelectClosePreset(24) }, label = { Text("24h") })
-                    FilterChip(selected = state.closeAfterHours == 72, onClick = { onSelectClosePreset(72) }, label = { Text("3d") })
+                    FilterChip(
+                        selected = state.closeAfterHours == null,
+                        onClick = { onSelectClosePreset(null) },
+                        label = { Text("Never") }
+                    )
+                    FilterChip(
+                        selected = state.closeAfterHours == 1,
+                        onClick = { onSelectClosePreset(1) },
+                        label = { Text("1h") }
+                    )
+                    FilterChip(
+                        selected = state.closeAfterHours == 24,
+                        onClick = { onSelectClosePreset(24) },
+                        label = { Text("24h") }
+                    )
+                    FilterChip(
+                        selected = state.closeAfterHours == 72,
+                        onClick = { onSelectClosePreset(72) },
+                        label = { Text("3d") }
+                    )
                 }
             }
 
-            // Full-width primary button for Save
             Button(
                 onClick = onSave,
                 enabled = !state.loading,
@@ -143,7 +149,6 @@ private fun OptionRow(
     onRemove: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Single-column layout instead of cramped row
         OutlinedTextField(
             value = id,
             onValueChange = onIdChange,

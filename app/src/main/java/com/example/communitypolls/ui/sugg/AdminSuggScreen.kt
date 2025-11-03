@@ -21,8 +21,8 @@ fun AdminSuggScreen(
     state: AdminSuggState,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
-    onBack: () -> Unit,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -35,8 +35,8 @@ fun AdminSuggScreen(
                 }
             )
         }
-    ) { pad ->
-        Column(Modifier.padding(pad).fillMaxSize()) {
+    ) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
             if (state.loading) {
                 LinearProgressIndicator(
                     modifier = Modifier
@@ -44,6 +44,7 @@ fun AdminSuggScreen(
                         .padding(horizontal = 16.dp)
                 )
             }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
@@ -67,7 +68,7 @@ private fun SuggestionCard(
     suggestion: Suggestion,
     onAccept: (String) -> Unit,
     onDecline: (String) -> Unit,
-    onDelete: (String) -> Unit //
+    onDelete: (String) -> Unit
 ) {
     val isPending = suggestion.status == "pending"
 
@@ -77,9 +78,7 @@ private fun SuggestionCard(
         elevation = CardDefaults.cardElevation(4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -113,12 +112,8 @@ private fun SuggestionCard(
                 modifier = Modifier.align(Alignment.End)
             ) {
                 if (isPending) {
-                    Button(onClick = { onAccept(suggestion.id) }) {
-                        Text("Accept")
-                    }
-                    OutlinedButton(onClick = { onDecline(suggestion.id) }) {
-                        Text("Decline")
-                    }
+                    Button(onClick = { onAccept(suggestion.id) }) { Text("Accept") }
+                    OutlinedButton(onClick = { onDecline(suggestion.id) }) { Text("Decline") }
                 } else {
                     OutlinedButton(
                         onClick = { onDelete(suggestion.id) },
@@ -131,7 +126,6 @@ private fun SuggestionCard(
         }
     }
 }
-
 
 @Composable
 private fun StatusChip(status: String) {

@@ -156,7 +156,6 @@ fun HomeGuestScreen(
     }
 }
 
-
 /* ------------------------------- USER ------------------------------- */
 
 @Composable
@@ -264,8 +263,7 @@ fun HomeAdminScreen(
                     shape = RoundedCornerShape(50)
                 )
             }
-        }
-        ,
+        },
         bottomBar = {
             Box(
                 modifier = Modifier
@@ -312,15 +310,10 @@ fun HomeAdminScreen(
                             }
                         }
                     }
-                ) {
-                    Text(if (deleting) "Deleting…" else "Delete")
-                }
+                ) { Text(if (deleting) "Deleting…" else "Delete") }
             },
             dismissButton = {
-                TextButton(
-                    enabled = !deleting,
-                    onClick = { pendingDeleteId = null }
-                ) {
+                TextButton(enabled = !deleting, onClick = { pendingDeleteId = null }) {
                     Text("Cancel")
                 }
             },
@@ -329,4 +322,3 @@ fun HomeAdminScreen(
         )
     }
 }
-

@@ -30,13 +30,15 @@ class AdminSuggViewModel(
         }
     }
 
-    fun clearError() { _state.value = _state.value.copy(error = null) }
+    fun clearError() {
+        _state.value = _state.value.copy(error = null)
+    }
 
     fun setStatus(id: String, status: String) {
         viewModelScope.launch {
             when (repo.updateStatus(id, status)) {
                 is SuggOp.Success -> Unit
-                is SuggOp.Error   -> _state.value = _state.value.copy(error = "Could not set $status")
+                is SuggOp.Error -> _state.value = _state.value.copy(error = "Could not set $status")
             }
         }
     }
@@ -45,13 +47,10 @@ class AdminSuggViewModel(
         viewModelScope.launch {
             when (repo.delete(id)) {
                 is SuggOp.Success -> {
-                    // Let firestore observer auto-update the list
+                    // Firestore observer will auto-update the list
                 }
-                is SuggOp.Error -> {
-                    _state.value = _state.value.copy(error = "Could not delete suggestion")
-                }
+                is SuggOp.Error -> _state.value = _state.value.copy(error = "Could not delete suggestion")
             }
         }
     }
-
 }
