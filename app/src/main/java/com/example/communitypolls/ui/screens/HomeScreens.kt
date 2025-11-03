@@ -2,7 +2,6 @@
 
 package com.example.communitypolls.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,29 +12,67 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.communitypolls.ui.ServiceLocator
 import com.example.communitypolls.ui.polls.PollListRoute
 import com.example.communitypolls.ui.polls.PollSort
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
+import coil.compose.AsyncImage
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+
 
 /* ---------------------------- SHARED TOP BAR ---------------------------- */
 
+
 @Composable
 private fun PollsTopBar(
+    navController: NavController,
     onSuggestClick: () -> Unit,
     onSortClick: () -> Unit,
     sort: PollSort,
-    onSignOut: () -> Unit,
+    displayName: String?,
+    email: String?,
     showSort: Boolean = true,
     suggestLabel: String = "Suggest"
 ) {
-    TopAppBar(
-        title = { Text("Polls", style = MaterialTheme.typography.titleLarge) },
-        actions = {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                if (!displayName.isNullOrBlank()) {
+                    Text(text = displayName, style = MaterialTheme.typography.titleMedium)
+                }
+                if (!email.isNullOrBlank()) {
+                    Text(text = email, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
+            IconButton(onClick = { navController.navigate("profile") }) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             AssistChip(
                 onClick = onSuggestClick,
                 label = { Text(suggestLabel) },
@@ -50,11 +87,8 @@ private fun PollsTopBar(
                     shape = RoundedCornerShape(50)
                 )
             }
-            TextButton(onClick = onSignOut) {
-                Text("Sign Out", style = MaterialTheme.typography.labelLarge)
-            }
         }
-    )
+    }
 }
 
 /* ------------------------------- GUEST ------------------------------- */
@@ -127,37 +161,28 @@ fun HomeGuestScreen(
 
 @Composable
 fun HomeUserScreen(
+    navController: NavController,
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
     onSuggestClick: () -> Unit
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
+    val user = FirebaseAuth.getInstance().currentUser
+    val displayName = user?.displayName ?: "User"
+    val email = user?.email ?: ""
 
     Scaffold(
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AssistChip(
-                    onClick = onSuggestClick,
-                    label = { Text("Suggest Poll") },
-                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    shape = RoundedCornerShape(50)
-                )
-
-                AssistChip(
-                    onClick = {
-                        sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
-                    },
-                    label = { Text("Sort: ${if (sort == PollSort.NEWEST) "Newest" else "Oldest"}") },
-                    leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) },
-                    shape = RoundedCornerShape(50)
-                )
-            }
+            PollsTopBar(
+                navController = navController,
+                onSuggestClick = onSuggestClick,
+                onSortClick = {
+                    sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                },
+                sort = sort,
+                displayName = displayName,
+                email = email
+            )
         },
         bottomBar = {
             Box(
@@ -177,7 +202,6 @@ fun HomeUserScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            // Poll list
             PollListRoute(
                 onPollClick = onPollClick,
                 showAdminActions = false,
@@ -188,9 +212,6 @@ fun HomeUserScreen(
         }
     }
 }
-
-
-
 
 /* ------------------------------- ADMIN ------------------------------- */
 

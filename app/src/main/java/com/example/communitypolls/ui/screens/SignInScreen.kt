@@ -21,7 +21,8 @@ fun SignInScreen(
     loading: Boolean,
     error: String?,
     onSubmit: (String, String) -> Unit,
-    onGoToSignUp: () -> Unit = {}
+    onGoToSignUp: () -> Unit = {},
+    onResetPassword: (String) -> Unit = {} // NEW
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -29,7 +30,6 @@ fun SignInScreen(
 
     val canSubmit = email.isNotBlank() && password.length >= 6
 
-    // Wrap the whole screen in a Scaffold with TopAppBar to fix layout clipping
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -47,7 +47,6 @@ fun SignInScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Email field with icon
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -59,7 +58,6 @@ fun SignInScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Password field with visibility toggle
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -76,47 +74,42 @@ fun SignInScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // 🔹 Reset Password Button
+            TextButton(
+                onClick = {
+                    if (email.isNotBlank()) {
+                        onResetPassword(email)
+                    }
+                },
+                enabled = email.isNotBlank()
+            ) {
+                Text("Forgot Password?")
+            }
+
             Spacer(Modifier.height(24.dp))
 
-            // Full-width primary action button
             Button(
-                onClick = { onSubmit(email.trim(), password) },
-                enabled = canSubmit && !loading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
+                onClick = { onSubmit(email, password) },
+                enabled = canSubmit,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Continue")
+                Text("Sign In")
             }
 
-            // Clear navigation action to Sign Up
-            TextButton(
-                onClick = onGoToSignUp,
-                modifier = Modifier.padding(top = 8.dp),
-                enabled = !loading
-            ) {
-                Text("Create an account")
+            TextButton(onClick = onGoToSignUp) {
+                Text("Don't have an account? Sign Up")
             }
 
-            // Loading and error indicators styled consistently
             if (loading) {
-                Spacer(Modifier.height(24.dp))
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator()
             }
 
-            if (error != null) {
-                Spacer(Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        error,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
+            error?.let {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(text = it, color = Color.Red)
             }
         }
     }
 }
+

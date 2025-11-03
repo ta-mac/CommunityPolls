@@ -39,10 +39,25 @@ class AuthViewModel(
     fun signUp(email: String, password: String, name: String) = viewModelScope.launch {
         _state.value = _state.value.copy(loading = true, error = null)
         when (val res = repo.signUp(email, password, name)) {
-            is AuthResult.Success -> _state.value = AuthUiState(user = res.user)
+            is AuthResult.Success -> {
+                try {
+                    // 🔄 Update Firebase Auth profile immediately after sign-up
+                    repo.updateDisplayName(name)
+
+                    // Refresh current user to reflect changes
+                    res.user?.let {
+                        _state.value = AuthUiState(user = it.copy(displayName = name))
+                    } ?: run {
+                        _state.value = AuthUiState(user = res.user)
+                    }
+                } catch (e: Exception) {
+                    _state.value = _state.value.copy(error = "Failed to update name", loading = false)
+                }
+            }
             is AuthResult.Error -> _state.value = _state.value.copy(loading = false, error = res.message)
         }
     }
+
 
     fun signIn(email: String, password: String) = viewModelScope.launch {
         _state.value = _state.value.copy(loading = true, error = null)
@@ -59,6 +74,43 @@ class AuthViewModel(
             is AuthResult.Error -> _state.value = _state.value.copy(loading = false, error = res.message)
         }
     }
+
+    //New Feature to reset user password
+    fun resetPassword(email: String) = viewModelScope.launch {
+        _state.value = _state.value.copy(loading = true, error = null)
+        when (val res = repo.resetPassword(email)) {
+            is AuthResult.Success -> _state.value = _state.value.copy(
+                loading = false,
+                error = "Reset email sent to $email"
+            )
+            is AuthResult.Error -> _state.value = _state.value.copy(
+                loading = false,
+                error = res.message
+            )
+        }
+    }
+
+    fun updateDisplayName(name: String) = viewModelScope.launch {
+        _state.value = _state.value.copy(loading = true, error = null)
+        try {
+            repo.updateDisplayName(name)
+            _state.value = _state.value.copy(error = "Name updated successfully", loading = false)
+        } catch (e: Exception) {
+            _state.value = _state.value.copy(error = e.message, loading = false)
+        }
+    }
+
+    fun changePassword(newPassword: String) = viewModelScope.launch {
+        _state.value = _state.value.copy(loading = true, error = null)
+        try {
+            repo.changePassword(newPassword)
+            _state.value = _state.value.copy(error = "Password updated successfully", loading = false)
+        } catch (e: Exception) {
+            _state.value = _state.value.copy(error = e.message, loading = false)
+        }
+    }
+
+
 
     fun signOut() = viewModelScope.launch {
         repo.signOut()

@@ -96,5 +96,9 @@ dependencies {
 
     // Firebase Performance Monitoring
     implementation("com.google.firebase:firebase-perf-ktx:20.5.1") // latest at time of writing
+
+    //Profile Picture
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
 }
 

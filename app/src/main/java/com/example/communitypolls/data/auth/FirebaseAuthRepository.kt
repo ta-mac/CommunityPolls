@@ -9,6 +9,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.auth.userProfileChangeRequest
+
 
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth,
@@ -86,6 +88,21 @@ class FirebaseAuthRepository(
         auth.signOut()
     }
 
+    override suspend fun resetPassword(email: String): AuthResult {
+        return try {
+            val result = auth.fetchSignInMethodsForEmail(email).await()
+            if (result.signInMethods.isNullOrEmpty()) {
+                return AuthResult.Error("No account found with that email.")
+            }
+
+            auth.sendPasswordResetEmail(email.trim()).await()
+            AuthResult.Success(AppUser("", email.trim(), "", "user"))
+        } catch (e: Exception) {
+            AuthResult.Error(e.message ?: "Failed to send reset email")
+        }
+    }
+
+
     override suspend fun refreshRole(): AppUser? {
         val fUser = auth.currentUser ?: return null
         val prof = usersCol.document(fUser.uid).get().await()
@@ -94,6 +111,20 @@ class FirebaseAuthRepository(
         val email = fUser.email ?: ""
         return AppUser(fUser.uid, email, displayName, role)
     }
+
+    override suspend fun updateDisplayName(name: String) {
+        val user = auth.currentUser ?: throw Exception("No authenticated user.")
+        user.updateProfile(userProfileChangeRequest {
+            displayName = name
+        }).await()
+        db.collection("users").document(user.uid).update("displayName", name)
+    }
+
+    override suspend fun changePassword(newPassword: String) {
+        val user = auth.currentUser ?: throw Exception("No authenticated user.")
+        user.updatePassword(newPassword).await()
+    }
+
 
     private suspend fun ensureUserProfile(fUser: FirebaseUser, role: String?, displayName: String) {
         val doc = usersCol.document(fUser.uid).get().await()

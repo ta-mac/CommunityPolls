@@ -19,6 +19,10 @@ import com.example.communitypolls.ui.polls.PollVoteRoute
 import com.example.communitypolls.ui.screens.*
 import com.example.communitypolls.ui.sugg.SuggestPollRoute
 import com.example.communitypolls.ui.sugg.AdminSuggRoute
+import com.example.communitypolls.ui.screens.HomeUserScreen
+import com.example.communitypolls.ui.screens.HomeAdminScreen
+import com.example.communitypolls.ui.screens.HomeGuestScreen
+
 
 sealed class Route(val route: String) {
     object Welcome : Route("welcome")
@@ -33,6 +37,8 @@ sealed class Route(val route: String) {
     object PollEdit : Route("poll_edit/{pollId}")
     object Suggest : Route("suggest")
     object SuggestionsAdmin : Route("suggestions_admin")
+    object Profile : Route("profile")
+
 }
 
 @Composable
@@ -62,9 +68,11 @@ fun AppNav() {
                 loading = state.loading,
                 error = state.error,
                 onSubmit = authVm::signIn,
-                onGoToSignUp = { nav.navigate(Route.SignUp.route) }
+                onGoToSignUp = { nav.navigate(Route.SignUp.route) },
+                onResetPassword = authVm::resetPassword //New feature
             )
         }
+
 
         composable(Route.SignUp.route) {
             LaunchedEffect(user) { if (user != null) navigateToRoleHome(nav, user.role) }
@@ -89,6 +97,7 @@ fun AppNav() {
 
         composable(Route.HomeUser.route) {
             HomeUserScreen(
+                navController = nav,
                 onSignOut = {
                     authVm.signOut()
                     nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
@@ -169,6 +178,17 @@ fun AppNav() {
         composable(Route.SuggestionsAdmin.route) {
             AdminSuggRoute(onClose = { nav.popBackStack() })
         }
+
+        composable(Route.Profile.route) {
+            ProfileScreen(
+                user = state.user,
+                error = state.error,
+                loading = state.loading,
+                onUpdateName = { newName -> authVm.updateDisplayName(newName) },
+                onChangePassword = { newPassword -> authVm.changePassword(newPassword) }
+            )
+        }
+
     }
 }
 
