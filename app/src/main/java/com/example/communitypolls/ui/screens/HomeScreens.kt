@@ -14,19 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.communitypolls.ui.ServiceLocator
 import com.example.communitypolls.ui.polls.PollListRoute
 import com.example.communitypolls.ui.polls.PollSort
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
-import coil.compose.AsyncImage
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.CircleShape
-
 
 /* ---------------------------- SHARED TOP BAR ---------------------------- */
-
 
 @Composable
 private fun PollsTopBar(
@@ -63,7 +58,6 @@ private fun PollsTopBar(
                     modifier = Modifier.size(32.dp)
                 )
             }
-
         }
 
         Row(
@@ -96,27 +90,20 @@ private fun PollsTopBar(
 @Composable
 fun HomeGuestScreen(
     onSignOut: () -> Unit,
-    onPollClick: (String) -> Unit,
-    onSuggestClick: () -> Unit
+    onPollClick: (String) -> Unit
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
 
     Scaffold(
         topBar = {
+            // Keep only sort control for guests (no Suggest)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp, start = 16.dp, end = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                AssistChip(
-                    onClick = onSuggestClick,
-                    label = { Text("Suggest Poll") },
-                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    shape = RoundedCornerShape(50)
-                )
-
                 AssistChip(
                     onClick = {
                         sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
@@ -145,6 +132,7 @@ fun HomeGuestScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
+            // onPollClick for guests should be routed to view results only
             PollListRoute(
                 onPollClick = onPollClick,
                 showAdminActions = false,
@@ -156,38 +144,84 @@ fun HomeGuestScreen(
     }
 }
 
+
 /* ------------------------------- USER ------------------------------- */
 
 @Composable
 fun HomeUserScreen(
-    navController: NavController,
+    navController: NavHostController,
     onSignOut: () -> Unit,
     onPollClick: (String) -> Unit,
-    onSuggestClick: () -> Unit
+    onSuggestClick: () -> Unit,
+    displayName: String?,
+    email: String?,
+    onProfileClick: () -> Unit
 ) {
     var sort by remember { mutableStateOf(PollSort.NEWEST) }
-    val user = FirebaseAuth.getInstance().currentUser
-    val displayName = user?.displayName ?: "User"
-    val email = user?.email ?: ""
 
     Scaffold(
         topBar = {
-            PollsTopBar(
-                navController = navController,
-                onSuggestClick = onSuggestClick,
-                onSortClick = {
-                    sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
-                },
-                sort = sort,
-                displayName = displayName,
-                email = email
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        displayName?.let {
+                            Text(it, style = MaterialTheme.typography.titleSmall)
+                        }
+                        email?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+
+                    IconButton(onClick = onProfileClick) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AssistChip(
+                        onClick = {
+                            sort = if (sort == PollSort.NEWEST) PollSort.OLDEST else PollSort.NEWEST
+                        },
+                        label = { Text("Sort: ${if (sort == PollSort.NEWEST) "Newest" else "Oldest"}") },
+                        leadingIcon = { Icon(Icons.Default.Sort, contentDescription = null) },
+                        shape = RoundedCornerShape(50)
+                    )
+
+                    AssistChip(
+                        onClick = onSuggestClick,
+                        label = { Text("Suggest") },
+                        leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                        shape = RoundedCornerShape(50)
+                    )
+                }
+
+            }
         },
         bottomBar = {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 36.dp),
+                    .padding(bottom = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
                 TextButton(onClick = onSignOut) {
@@ -211,6 +245,7 @@ fun HomeUserScreen(
         }
     }
 }
+
 
 /* ------------------------------- ADMIN ------------------------------- */
 

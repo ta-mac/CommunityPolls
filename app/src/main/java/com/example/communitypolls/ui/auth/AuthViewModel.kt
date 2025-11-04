@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
 
 data class AuthUiState(
     val loading: Boolean = false,
@@ -112,8 +113,15 @@ class AuthViewModel(
 
 
 
-    fun signOut() = viewModelScope.launch {
-        repo.signOut()
-        // repo.currentUser flow will emit null and update UI automatically
+    fun signOut() {
+        FirebaseAuth.getInstance().signOut()
+
+        // Emit auth state change so UI reacts automatically
+        _state.value = AuthUiState(
+            user = null,
+            loading = false,
+            error = null
+        )
     }
+
 }

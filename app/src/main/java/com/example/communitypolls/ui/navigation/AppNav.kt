@@ -19,10 +19,6 @@ import com.example.communitypolls.ui.polls.PollVoteRoute
 import com.example.communitypolls.ui.screens.*
 import com.example.communitypolls.ui.sugg.SuggestPollRoute
 import com.example.communitypolls.ui.sugg.AdminSuggRoute
-import com.example.communitypolls.ui.screens.HomeUserScreen
-import com.example.communitypolls.ui.screens.HomeAdminScreen
-import com.example.communitypolls.ui.screens.HomeGuestScreen
-
 
 sealed class Route(val route: String) {
     object Welcome : Route("welcome")
@@ -38,7 +34,6 @@ sealed class Route(val route: String) {
     object Suggest : Route("suggest")
     object SuggestionsAdmin : Route("suggestions_admin")
     object Profile : Route("profile")
-
 }
 
 @Composable
@@ -47,6 +42,15 @@ fun AppNav() {
     val authVm: AuthViewModel = viewModel(factory = AuthVmFactory())
     val state by authVm.state.collectAsState()
     val user = state.user
+
+    // 👇 Automatically navigate to Welcome if user is null
+    LaunchedEffect(user) {
+        if (user == null) {
+            nav.navigate(Route.Welcome.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
 
     NavHost(navController = nav, startDestination = Route.Welcome.route) {
 
@@ -69,10 +73,9 @@ fun AppNav() {
                 error = state.error,
                 onSubmit = authVm::signIn,
                 onGoToSignUp = { nav.navigate(Route.SignUp.route) },
-                onResetPassword = authVm::resetPassword //New feature
+                onResetPassword = authVm::resetPassword
             )
         }
-
 
         composable(Route.SignUp.route) {
             LaunchedEffect(user) { if (user != null) navigateToRoleHome(nav, user.role) }
@@ -86,24 +89,22 @@ fun AppNav() {
 
         composable(Route.HomeGuest.route) {
             HomeGuestScreen(
-                onSignOut = {
-                    authVm.signOut()
-                    nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
-                },
-                onPollClick = { id -> nav.navigate("poll_vote/$id") },
-                onSuggestClick = { nav.navigate(Route.Suggest.route) }
+                onSignOut = { authVm.signOut() },
+                // Guests open the poll results page (no voting)
+                onPollClick = { id -> nav.navigate("poll_results/$id") }
             )
         }
+
 
         composable(Route.HomeUser.route) {
             HomeUserScreen(
                 navController = nav,
-                onSignOut = {
-                    authVm.signOut()
-                    nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
-                },
+                onSignOut = { authVm.signOut() },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
-                onSuggestClick = { nav.navigate(Route.Suggest.route) }
+                onSuggestClick = { nav.navigate(Route.Suggest.route) },
+                displayName = user?.displayName.orEmpty(),
+                email = user?.email.orEmpty(),
+                onProfileClick = { nav.navigate(Route.Profile.route) }
             )
         }
 
@@ -115,17 +116,13 @@ fun AppNav() {
                         restoreState = false
                     }
                 },
-                onSignOut = {
-                    authVm.signOut()
-                    nav.navigate(Route.Welcome.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
-                },
+                onSignOut = { authVm.signOut() },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
                 onEditPoll = { id -> nav.navigate("poll_edit/$id") },
-                onSuggestClick = { nav.navigate(Route.SuggestionsAdmin.route) } // <-- admin goes to review list
+                onSuggestClick = { nav.navigate(Route.SuggestionsAdmin.route) }
             )
         }
 
-        // Create Poll (admin only)
         composable(Route.PollCreate.route) {
             when (val u = user) {
                 null -> Box(Modifier.fillMaxSize()) { CircularProgressIndicator() }
@@ -135,7 +132,7 @@ fun AppNav() {
                     } else {
                         PollEditorRoute(
                             createdByUid = u.uid,
-                            onSaved = { _ -> nav.popBackStack() },
+                            onSaved = { nav.popBackStack() },
                             onCancel = { nav.popBackStack() }
                         )
                     }
@@ -166,7 +163,6 @@ fun AppNav() {
             )
         }
 
-        // Suggest a Poll (users/guests)
         composable(Route.Suggest.route) {
             SuggestPollRoute(
                 onSubmitted = { nav.popBackStack() },
@@ -174,21 +170,19 @@ fun AppNav() {
             )
         }
 
-        // Admin: review suggestions
         composable(Route.SuggestionsAdmin.route) {
             AdminSuggRoute(onClose = { nav.popBackStack() })
         }
 
         composable(Route.Profile.route) {
             ProfileScreen(
-                user = state.user,
+                user = user,
                 error = state.error,
                 loading = state.loading,
                 onUpdateName = { newName -> authVm.updateDisplayName(newName) },
                 onChangePassword = { newPassword -> authVm.changePassword(newPassword) }
             )
         }
-
     }
 }
 
