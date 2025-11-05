@@ -29,7 +29,6 @@ class AuthViewModel(
 
     fun validatePasswordInput(password: String) {
         val issues = mutableListOf<String>()
-
         if (password.length < 6) issues.add("At least 6 characters")
         if (!password.any { it.isUpperCase() }) issues.add("1 uppercase letter")
         if (!password.any { it.isDigit() }) issues.add("1 number")
@@ -68,7 +67,8 @@ class AuthViewModel(
                     _state.value = _state.value.copy(error = "Failed to update name", loading = false)
                 }
             }
-            is AuthResult.Error -> _state.value = _state.value.copy(loading = false, error = res.message)
+            is AuthResult.Error -> _state.value =
+                _state.value.copy(loading = false, error = res.message)
         }
     }
 
@@ -76,7 +76,8 @@ class AuthViewModel(
         _state.value = _state.value.copy(loading = true, error = null)
         when (val res = repo.signIn(email, password)) {
             is AuthResult.Success -> _state.value = AuthUiState(user = res.user)
-            is AuthResult.Error -> _state.value = _state.value.copy(loading = false, error = res.message)
+            is AuthResult.Error -> _state.value =
+                _state.value.copy(loading = false, error = res.message)
         }
     }
 
@@ -84,7 +85,8 @@ class AuthViewModel(
         _state.value = _state.value.copy(loading = true, error = null)
         when (val res = repo.signInAnonymously()) {
             is AuthResult.Success -> _state.value = AuthUiState(user = res.user)
-            is AuthResult.Error -> _state.value = _state.value.copy(loading = false, error = res.message)
+            is AuthResult.Error -> _state.value =
+                _state.value.copy(loading = false, error = res.message)
         }
     }
 
@@ -125,12 +127,11 @@ class AuthViewModel(
     fun signOut() {
         FirebaseAuth.getInstance().signOut()
 
-        //Clear local app state so navigation recomposes
+        // ✅ Immediately clear local user session so recomposition triggers
         _state.value = _state.value.copy(
             user = null,
             error = null,
             loading = false
         )
     }
-
 }

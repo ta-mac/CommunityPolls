@@ -43,33 +43,26 @@ fun AppNav() {
     val authVm: AuthViewModel = viewModel(factory = AuthVmFactory())
     val state by authVm.state.collectAsState()
     val user = state.user
+
+    // ✅ Guard: If user is null, always force navigation to Welcome and clear backstack
     LaunchedEffect(user) {
         if (user == null) {
-            // if current screen is not splash or welcome, redirect
             nav.navigate(Route.Welcome.route) {
-                popUpTo(Route.Splash.route) { inclusive = true }
+                popUpTo(0) { inclusive = true } // clear all previous destinations
                 launchSingleTop = true
             }
         }
     }
 
-
-    /**
-     * Helper for resolving role. If you already keep it in state.user.role, use that.
-     * Otherwise, implement a users/{uid} fetch and return its "role".
-     */
-    val resolveRole: suspend () -> String? = {
-        user?.role  // return "admin", "user", or "guest"
-    }
+    val resolveRole: suspend () -> String? = { user?.role }
 
     NavHost(navController = nav, startDestination = Route.Splash.route) {
 
-        // Splash – WhatsApp style UI + session gate
         composable(Route.Splash.route) {
             SplashScreen(
                 navController = nav,
                 resolveRole = resolveRole,
-                companyName = "ByteForge"  // <-- change to your brand
+                companyName = "ByteForge"
             )
         }
 
@@ -86,7 +79,6 @@ fun AppNav() {
                     navigateToRoleHome(nav, resolved)
                 }
             )
-
         }
 
         composable(Route.SignIn.route) {
@@ -112,7 +104,13 @@ fun AppNav() {
 
         composable(Route.HomeGuest.route) {
             HomeGuestScreen(
-                onSignOut = { authVm.signOut() },
+                onSignOut = {
+                    authVm.signOut()
+                    nav.navigate(Route.Welcome.route) {
+                        popUpTo(0) { inclusive = true } // ✅ clear all previous routes
+                        launchSingleTop = true
+                    }
+                },
                 onPollClick = { id -> nav.navigate("poll_results/$id") }
             )
         }
@@ -120,7 +118,13 @@ fun AppNav() {
         composable(Route.HomeUser.route) {
             HomeUserScreen(
                 navController = nav,
-                onSignOut = { authVm.signOut() },
+                onSignOut = {
+                    authVm.signOut()
+                    nav.navigate(Route.Welcome.route) {
+                        popUpTo(0) { inclusive = true } // ✅ back-press safe
+                        launchSingleTop = true
+                    }
+                },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
                 onSuggestClick = { nav.navigate(Route.Suggest.route) },
                 displayName = user?.displayName.orEmpty(),
@@ -138,7 +142,13 @@ fun AppNav() {
                         restoreState = false
                     }
                 },
-                onSignOut = { authVm.signOut() },
+                onSignOut = {
+                    authVm.signOut()
+                    nav.navigate(Route.Welcome.route) {
+                        popUpTo(0) { inclusive = true } // ✅ prevent back navigation
+                        launchSingleTop = true
+                    }
+                },
                 onPollClick = { id -> nav.navigate("poll_vote/$id") },
                 onEditPoll = { id -> nav.navigate("poll_edit/$id") },
                 onSuggestClick = { nav.navigate(Route.SuggestionsAdmin.route) }
@@ -219,6 +229,7 @@ fun AppNav() {
     }
 }
 
+// ✅ Helper for role-based routing
 private fun navigateToRoleHome(nav: NavHostController, role: String) {
     when (role.lowercase()) {
         "admin" -> nav.navigate(Route.HomeAdmin.route) {

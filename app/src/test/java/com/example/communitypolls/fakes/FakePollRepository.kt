@@ -14,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * In-memory implementation of PollRepository for fast, deterministic unit tests.
- * This does NOT depend on Firebase and can be used in local JVM tests.
+ * In-memory implementation of PollRepository for unit tests.
+ * This mock stores polls and votes locally, without any Firebase dependency.
  */
 class FakePollRepository : PollRepository {
 
@@ -48,10 +48,12 @@ class FakePollRepository : PollRepository {
     ): CreatePollResult {
         val trimmedTitle = title.trim()
         val cleanOptions = options.map { it.copy(id = it.id.trim(), text = it.text.trim()) }
+
         if (trimmedTitle.isBlank()) return CreatePollResult.Error("Title cannot be blank")
         if (cleanOptions.size < 2) return CreatePollResult.Error("At least two options are required")
         if (cleanOptions.any { it.text.isBlank() }) return CreatePollResult.Error("Option text cannot be blank")
-        if (cleanOptions.map { it.id }.toSet().size != cleanOptions.size) return CreatePollResult.Error("Option IDs must be unique")
+        if (cleanOptions.map { it.id }.toSet().size != cleanOptions.size)
+            return CreatePollResult.Error("Option IDs must be unique")
 
         val newId = "poll_${idCounter.getAndIncrement()}"
         val now = System.currentTimeMillis()
@@ -99,11 +101,21 @@ class FakePollRepository : PollRepository {
         return OpResult.Success
     }
 
-    override suspend fun castVote(pollId: String, optionId: String, voterUid: String): OpResult {
+    // ✅ Updated to match interface: includes `anonymous` parameter
+    override suspend fun castVote(
+        pollId: String,
+        optionId: String,
+        voterUid: String,
+        anonymous: Boolean
+    ): OpResult {
         val poll = polls[pollId] ?: return OpResult.Error("Poll not found")
         if (poll.options.none { it.id == optionId }) return OpResult.Error("Invalid option")
+
         val flow = votes.getOrPut(pollId) { MutableStateFlow(emptyMap()) }
+
+        // We don’t need to simulate anonymity here — just record the vote
         flow.update { it + (voterUid to optionId) }
+
         return OpResult.Success
     }
 

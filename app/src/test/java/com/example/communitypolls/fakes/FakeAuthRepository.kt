@@ -3,42 +3,75 @@ package com.example.communitypolls.fakes
 import com.example.communitypolls.data.auth.AuthRepository
 import com.example.communitypolls.data.auth.AuthResult
 import com.example.communitypolls.model.AppUser
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 class FakeAuthRepository : AuthRepository {
-    private val users = ConcurrentHashMap<String, Pair<String, AppUser>>()
-    private val id = AtomicInteger(1)
-    private val _current = MutableStateFlow<AppUser?>(null)
 
-    override val currentUser = _current.asStateFlow()
+    private val _currentUser = MutableStateFlow<AppUser?>(null)
+    override val currentUser: Flow<AppUser?> = _currentUser
 
-    override suspend fun signUp(email: String, password: String, displayName: String): AuthResult {
-        if (users.containsKey(email)) return AuthResult.Error("Email already registered")
-        val uid = "u${id.getAndIncrement()}"
-        val user = AppUser(uid = uid, email = email, displayName = displayName, role = "user")
-        users[email] = password to user
-        _current.value = user
-        return AuthResult.Success(user)
+    private var shouldFail = false
+
+    fun setShouldFail(value: Boolean) {
+        shouldFail = value
     }
 
     override suspend fun signIn(email: String, password: String): AuthResult {
-        val entry = users[email] ?: return AuthResult.Error("No such user")
-        if (entry.first != password) return AuthResult.Error("Wrong password")
-        _current.value = entry.second
-        return AuthResult.Success(entry.second)
+        return if (shouldFail) {
+            AuthResult.Error("Sign-in failed")
+        } else {
+            val fakeUser = AppUser(uid = "123", email = email, displayName = "Fake User", role = "user")
+            _currentUser.value = fakeUser
+            AuthResult.Success(fakeUser)
+        }
+    }
+
+    override suspend fun signUp(email: String, password: String, displayName: String): AuthResult {
+        return if (shouldFail) {
+            AuthResult.Error("Sign-up failed")
+        } else {
+            val fakeUser = AppUser(uid = "456", email = email, displayName = displayName, role = "user")
+            _currentUser.value = fakeUser
+            AuthResult.Success(fakeUser)
+        }
     }
 
     override suspend fun signInAnonymously(): AuthResult {
-        val uid = "guest_${id.getAndIncrement()}"
-        val user = AppUser(uid = uid, displayName = "Guest", role = "guest", email = "")
-        _current.value = user
-        return AuthResult.Success(user)
+        return if (shouldFail) {
+            AuthResult.Error("Anonymous sign-in failed")
+        } else {
+            val fakeUser = AppUser(uid = "anon123", email = "", displayName = "Guest", role = "guest")
+            _currentUser.value = fakeUser
+            AuthResult.Success(fakeUser)
+        }
     }
 
-    override suspend fun signOut() { _current.value = null }
+    override suspend fun signOut() {
+        _currentUser.value = null
+    }
 
-    override suspend fun refreshRole(): AppUser? = _current.value
+    override suspend fun refreshRole(): AppUser? {
+        return _currentUser.value
+    }
+
+    override suspend fun resetPassword(email: String): AuthResult {
+        return if (shouldFail) {
+            AuthResult.Error("Reset password failed")
+        } else {
+            AuthResult.Success(AppUser(uid = "reset", email = email, displayName = "Reset User", role = "user"))
+        }
+    }
+
+    override suspend fun updateDisplayName(name: String) {
+        val user = _currentUser.value
+        if (user != null) {
+            _currentUser.value = user.copy(displayName = name)
+        }
+    }
+
+    override suspend fun changePassword(newPassword: String) {
+        if (shouldFail) throw Exception("Change password failed")
+        // Simulate success silently
+    }
 }
