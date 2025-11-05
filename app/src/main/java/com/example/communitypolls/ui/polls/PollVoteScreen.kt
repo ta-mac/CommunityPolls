@@ -34,9 +34,11 @@ fun PollVoteRoute(
         ui.loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
+
         ui.poll == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Poll not found")
         }
+
         else -> {
             Column(Modifier.fillMaxSize().padding(16.dp)) {
                 Text(ui.poll!!.title, style = MaterialTheme.typography.headlineSmall)
@@ -45,6 +47,7 @@ fun PollVoteRoute(
                     Text(ui.poll!!.description, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(10.dp))
                 }
+
                 ui.poll!!.options.forEach { opt ->
                     Row(
                         modifier = Modifier
@@ -68,6 +71,19 @@ fun PollVoteRoute(
 
                 Spacer(Modifier.height(12.dp))
 
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Vote anonymously", Modifier.weight(1f))
+                    Switch(
+                        checked = ui.anonymous,
+                        onCheckedChange = { vm.toggleAnonymous() }
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
                 if (ui.error != null) {
                     Text(ui.error!!, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(8.dp))
@@ -84,10 +100,9 @@ fun PollVoteRoute(
 
                 Spacer(Modifier.height(8.dp))
 
-                Button(
-                    onClick = { onViewResults(pollId) },
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text("View results") }
+                Button(onClick = { onViewResults(pollId) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("View results")
+                }
 
                 if (ui.submitted) {
                     Spacer(Modifier.height(12.dp))

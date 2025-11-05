@@ -51,17 +51,22 @@ service cloud.firestore {
       allow delete: if isAdminUser();
 
       // Votes
-      match /votes/{uid} {
-        allow read: if true;
-        allow create: if isSignedIn()
-          && request.auth.uid == uid
-          && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(uid))
-          && request.resource.data is map
-          && ("optionId" in request.resource.data) && (request.resource.data.optionId is string)
-          && ("createdAt" in request.resource.data) && (request.resource.data.createdAt is int);
-        allow update: if false;        // no switching votes
-        allow delete: if isAdminUser();
-      }
+            match /votes/{uid} {
+            allow read: if true;
+            allow create: if isSignedIn()
+              && request.auth.uid == uid
+              && !exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(uid))
+              && request.resource.data is map
+              && ("optionId" in request.resource.data) && (request.resource.data.optionId is string)
+              && ("optionText" in request.resource.data) && (request.resource.data.optionText is string)
+              && ("createdAt" in request.resource.data) && (request.resource.data.createdAt is int)
+              && ("anonymous" in request.resource.data) && (request.resource.data.anonymous is bool)
+              // voterEmail is optional or can be null for anonymous votes
+              && (!("voterEmail" in request.resource.data) || request.resource.data.voterEmail is string || request.resource.data.voterEmail == null);
+            allow update: if false;
+            allow delete: if isAdminUser();
+          }
+
     }
 
     // ----- Suggestions -----

@@ -4,23 +4,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.example.communitypolls.AuthVmFactory
 import com.example.communitypolls.ui.auth.AuthViewModel
-import com.example.communitypolls.ui.polls.PollEditRoute
-import com.example.communitypolls.ui.polls.PollEditorRoute
-import com.example.communitypolls.ui.polls.PollResultsRoute
-import com.example.communitypolls.ui.polls.PollVoteRoute
+import com.example.communitypolls.ui.auth.SplashScreen
+import com.example.communitypolls.ui.polls.*
 import com.example.communitypolls.ui.screens.*
-import com.example.communitypolls.ui.sugg.SuggestPollRoute
 import com.example.communitypolls.ui.sugg.AdminSuggRoute
+import com.example.communitypolls.ui.sugg.SuggestPollRoute
 
 sealed class Route(val route: String) {
+    object Splash : Route("splash")
     object Welcome : Route("welcome")
     object SignIn : Route("signin")
     object SignUp : Route("signup")
@@ -42,17 +43,35 @@ fun AppNav() {
     val authVm: AuthViewModel = viewModel(factory = AuthVmFactory())
     val state by authVm.state.collectAsState()
     val user = state.user
-
-    // 👇 Automatically navigate to Welcome if user is null
     LaunchedEffect(user) {
         if (user == null) {
+            // if current screen is not splash or welcome, redirect
             nav.navigate(Route.Welcome.route) {
-                popUpTo(0) { inclusive = true }
+                popUpTo(Route.Splash.route) { inclusive = true }
+                launchSingleTop = true
             }
         }
     }
 
-    NavHost(navController = nav, startDestination = Route.Welcome.route) {
+
+    /**
+     * Helper for resolving role. If you already keep it in state.user.role, use that.
+     * Otherwise, implement a users/{uid} fetch and return its "role".
+     */
+    val resolveRole: suspend () -> String? = {
+        user?.role  // return "admin", "user", or "guest"
+    }
+
+    NavHost(navController = nav, startDestination = Route.Splash.route) {
+
+        // Splash – WhatsApp style UI + session gate
+        composable(Route.Splash.route) {
+            SplashScreen(
+                navController = nav,
+                resolveRole = resolveRole,
+                companyName = "ByteForge"  // <-- change to your brand
+            )
+        }
 
         composable(Route.Welcome.route) {
             WelcomeScreen(
@@ -62,8 +81,12 @@ fun AppNav() {
                 onSignUpClick = { nav.navigate(Route.SignUp.route) },
                 onGuestClick = { authVm.signInGuest() },
                 user = user,
-                onEnter = { navigateToRoleHome(nav, user?.role ?: "guest") }
+                onEnter = {
+                    val resolved = user?.role ?: "guest"
+                    navigateToRoleHome(nav, resolved)
+                }
             )
+
         }
 
         composable(Route.SignIn.route) {
@@ -90,11 +113,9 @@ fun AppNav() {
         composable(Route.HomeGuest.route) {
             HomeGuestScreen(
                 onSignOut = { authVm.signOut() },
-                // Guests open the poll results page (no voting)
                 onPollClick = { id -> nav.navigate("poll_results/$id") }
             )
         }
-
 
         composable(Route.HomeUser.route) {
             HomeUserScreen(
@@ -110,6 +131,7 @@ fun AppNav() {
 
         composable(Route.HomeAdmin.route) {
             HomeAdminScreen(
+                navController = nav,
                 onCreatePoll = {
                     nav.navigate(Route.PollCreate.route) {
                         launchSingleTop = true
@@ -123,25 +145,26 @@ fun AppNav() {
             )
         }
 
+        // Poll creation/edit/vote/results
         composable(Route.PollCreate.route) {
-            when (val u = user) {
-                null -> Box(Modifier.fillMaxSize()) { CircularProgressIndicator() }
-                else -> {
-                    if (!u.role.equals("admin", ignoreCase = true)) {
-                        LaunchedEffect(Unit) { nav.popBackStack() }
-                    } else {
-                        PollEditorRoute(
-                            createdByUid = u.uid,
-                            onSaved = { nav.popBackStack() },
-                            onCancel = { nav.popBackStack() }
-                        )
-                    }
+            val u = user
+            if (u == null) {
+                Box(Modifier.fillMaxSize()) { CircularProgressIndicator() }
+            } else {
+                if (!u.role.equals("admin", ignoreCase = true)) {
+                    LaunchedEffect(Unit) { nav.popBackStack() }
+                } else {
+                    PollEditorRoute(
+                        createdByUid = u.uid,
+                        onSaved = { nav.popBackStack() },
+                        onCancel = { nav.popBackStack() }
+                    )
                 }
             }
         }
 
-        composable(Route.PollVote.route) { backStackEntry ->
-            val pollId = backStackEntry.arguments?.getString("pollId") ?: return@composable
+        composable(Route.PollVote.route) { backStack ->
+            val pollId = backStack.arguments?.getString("pollId") ?: return@composable
             PollVoteRoute(
                 pollId = pollId,
                 onClose = { nav.popBackStack() },
@@ -149,13 +172,16 @@ fun AppNav() {
             )
         }
 
-        composable(Route.PollResults.route) { backStackEntry ->
-            val pollId = backStackEntry.arguments?.getString("pollId") ?: return@composable
-            PollResultsRoute(pollId = pollId, onClose = { nav.popBackStack() })
+        composable(Route.PollResults.route) { backStack ->
+            val pollId = backStack.arguments?.getString("pollId") ?: return@composable
+            PollResultsRoute(
+                pollId = pollId,
+                onClose = { nav.popBackStack() }
+            )
         }
 
-        composable(Route.PollEdit.route) { backStackEntry ->
-            val pollId = backStackEntry.arguments?.getString("pollId") ?: return@composable
+        composable(Route.PollEdit.route) { backStack ->
+            val pollId = backStack.arguments?.getString("pollId") ?: return@composable
             PollEditRoute(
                 pollId = pollId,
                 onSaved = { nav.popBackStack() },
@@ -174,13 +200,20 @@ fun AppNav() {
             AdminSuggRoute(onClose = { nav.popBackStack() })
         }
 
-        composable(Route.Profile.route) {
-            ProfileScreen(
-                user = user,
-                error = state.error,
-                loading = state.loading,
-                onUpdateName = { newName -> authVm.updateDisplayName(newName) },
-                onChangePassword = { newPassword -> authVm.changePassword(newPassword) }
+        // Admin: View votes screen
+        composable(
+            route = "voteList/{pollId}/{pollTitle}",
+            arguments = listOf(
+                navArgument("pollId") { type = NavType.StringType },
+                navArgument("pollTitle") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val pollId = backStackEntry.arguments?.getString("pollId") ?: ""
+            val pollTitle = backStackEntry.arguments?.getString("pollTitle") ?: ""
+            VoteListScreen(
+                pollId = pollId,
+                pollTitle = pollTitle,
+                onBack = { nav.popBackStack() }
             )
         }
     }
@@ -188,8 +221,17 @@ fun AppNav() {
 
 private fun navigateToRoleHome(nav: NavHostController, role: String) {
     when (role.lowercase()) {
-        "admin" -> nav.navigate(Route.HomeAdmin.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
-        "guest" -> nav.navigate(Route.HomeGuest.route) { popUpTo(Route.Welcome.route) { inclusive = true } }
-        else    -> nav.navigate(Route.HomeUser.route)  { popUpTo(Route.Welcome.route) { inclusive = true } }
+        "admin" -> nav.navigate(Route.HomeAdmin.route) {
+            popUpTo(Route.Splash.route) { inclusive = true }
+            launchSingleTop = true
+        }
+        "guest" -> nav.navigate(Route.HomeGuest.route) {
+            popUpTo(Route.Splash.route) { inclusive = true }
+            launchSingleTop = true
+        }
+        else -> nav.navigate(Route.HomeUser.route) {
+            popUpTo(Route.Splash.route) { inclusive = true }
+            launchSingleTop = true
+        }
     }
 }

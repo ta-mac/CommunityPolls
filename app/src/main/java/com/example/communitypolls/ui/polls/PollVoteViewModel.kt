@@ -15,6 +15,7 @@ data class VoteUiState(
     val loading: Boolean = true,
     val poll: Poll? = null,
     val selectedOptionId: String? = null,
+    val anonymous: Boolean = false,
     val submitting: Boolean = false,
     val error: String? = null,
     val submitted: Boolean = false
@@ -40,6 +41,10 @@ class PollVoteViewModel(
         _ui.value = _ui.value.copy(selectedOptionId = optionId)
     }
 
+    fun toggleAnonymous() {
+        _ui.value = _ui.value.copy(anonymous = !_ui.value.anonymous)
+    }
+
     fun submit() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         val option = _ui.value.selectedOptionId
@@ -53,7 +58,6 @@ class PollVoteViewModel(
             _ui.value = _ui.value.copy(error = "Select an option.")
             return
         }
-        // Client-side guard that mirrors security rules
         val now = System.currentTimeMillis()
         if (!p.isActive || (p.closesAt != null && p.closesAt!! <= now)) {
             _ui.value = _ui.value.copy(error = "This poll is closed.")
@@ -62,12 +66,21 @@ class PollVoteViewModel(
 
         _ui.value = _ui.value.copy(submitting = true, error = null)
         viewModelScope.launch {
-            when (val res = repo.castVote(pollId = p.id, optionId = option, voterUid = uid)) {
+            when (
+                val res = repo.castVote(
+                    pollId = p.id,
+                    optionId = option,
+                    voterUid = uid,
+                    anonymous = _ui.value.anonymous
+                )
+            ) {
                 is OpResult.Success -> _ui.value = _ui.value.copy(submitting = false, submitted = true)
                 is OpResult.Error -> _ui.value = _ui.value.copy(submitting = false, error = res.message)
             }
         }
     }
 
-    fun clearError() { _ui.value = _ui.value.copy(error = null) }
+    fun clearError() {
+        _ui.value = _ui.value.copy(error = null)
+    }
 }

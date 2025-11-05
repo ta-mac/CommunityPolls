@@ -3,13 +3,14 @@ package com.example.communitypolls.data.poll
 import android.util.Log
 import com.example.communitypolls.model.Poll
 import com.example.communitypolls.model.PollOption
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import com.google.firebase.perf.FirebasePerformance              // NEW: Performance monitoring
-import com.google.firebase.perf.metrics.Trace                   // NEW: Performance tracing
+import com.google.firebase.perf.FirebasePerformance
+import com.google.firebase.perf.metrics.Trace
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -21,9 +22,7 @@ class FirebasePollRepository(
     private val db: FirebaseFirestore
 ) : PollRepository {
 
-    // 🔥 NEW: In-memory cache to reduce reads
     private val pollCache = mutableMapOf<String, Poll>()
-
     private val polls get() = db.collection("polls")
 
     // ---------- Streams ----------
@@ -40,12 +39,8 @@ class FirebasePollRepository(
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
-
                 val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
-
-                // 🔥 Cache results locally
                 list.forEach { pollCache[it.id] = it }
-
                 trySend(list)
             }
         }
@@ -60,33 +55,25 @@ class FirebasePollRepository(
                 if (err != null) {
                     Log.e(TAG, "Ordered query failed: ${err.message}", err)
                     if (err is FirebaseFirestoreException &&
-                        err.code == FirebaseFirestoreException.Code.FAILED_PRECONDITION) {
-                        // Missing composite index: use fallback so items don't vanish
+                        err.code == FirebaseFirestoreException.Code.FAILED_PRECONDITION
+                    ) {
                         reg?.remove()
                         listenFallback()
                         trySend(emptyList())
-                    } else {
-                        trySend(emptyList())
-                    }
+                    } else trySend(emptyList())
                     return@addSnapshotListener
                 }
-
                 val list = snap?.documents?.mapNotNull { it.toPoll() } ?: emptyList()
-
-                // 🔥 Cache results locally
                 list.forEach { pollCache[it.id] = it }
-
                 trySend(list)
             }
         }
 
-        // Start ordered (preferred); fall back if index is missing
         listenOrdered()
         awaitClose { reg?.remove() }
     }
 
     override fun observePoll(pollId: String): Flow<Poll?> = callbackFlow {
-        // Serve from cache first if available
         pollCache[pollId]?.let { trySend(it) }
 
         val reg = polls.document(pollId).addSnapshotListener { snap, err ->
@@ -137,9 +124,6 @@ class FirebasePollRepository(
         val trimmedOptions = options.map { it.copy(id = it.id.trim(), text = it.text.trim()) }
         if (title.isBlank()) return CreatePollResult.Error("Title is required")
         if (trimmedOptions.size < 2) return CreatePollResult.Error("Add at least two options")
-        if (trimmedOptions.any { it.id.isBlank() || it.text.isBlank() }) {
-            return CreatePollResult.Error("Each option needs an id and text")
-        }
 
         val data = hashMapOf(
             "title" to title.trim(),
@@ -154,10 +138,10 @@ class FirebasePollRepository(
         return try {
             val doc = polls.document()
             doc.set(data).await()
-
-            val newPoll = Poll(doc.id, title, description, trimmedOptions, createdByUid, System.currentTimeMillis(), closesAtMillis, isActive)
-            pollCache[newPoll.id] = newPoll
-
+            pollCache[doc.id] = Poll(
+                doc.id, title, description, trimmedOptions,
+                createdByUid, System.currentTimeMillis(), closesAtMillis, isActive
+            )
             trace.stop()
             CreatePollResult.Success(doc.id)
         } catch (e: Exception) {
@@ -182,20 +166,16 @@ class FirebasePollRepository(
         description?.let { updates["description"] = it }
         options?.let {
             if (it.size < 2) return OpResult.Error("At least two options required")
-            val cleaned = it.map { o ->
-                val id = o.id.trim()
-                val text = o.text.trim()
-                if (id.isBlank() || text.isBlank()) return OpResult.Error("Option id/text required")
-                mapOf("id" to id, "text" to text)
+            updates["options"] = it.map { o ->
+                mapOf("id" to o.id.trim(), "text" to o.text.trim())
             }
-            updates["options"] = cleaned
         }
-        if (closesAtMillis != null) updates["closesAt"] = closesAtMillis
-        if (isActive != null) updates["isActive"] = isActive
+        closesAtMillis?.let { updates["closesAt"] = it }
+        isActive?.let { updates["isActive"] = it }
 
         return try {
             polls.document(pollId).update(updates as Map<String, Any>).await()
-            pollCache.remove(pollId) // Invalidate cache
+            pollCache.remove(pollId)
             trace.stop()
             OpResult.Success
         } catch (e: Exception) {
@@ -218,28 +198,78 @@ class FirebasePollRepository(
         }
     }
 
+    // ---------- Updated: castVote now stores option text, anonymous flag, and voter email ----------
+
     override suspend fun castVote(
         pollId: String,
         optionId: String,
-        voterUid: String
+        voterUid: String,
+        anonymous: Boolean
     ): OpResult {
         val trace = FirebasePerformance.getInstance().newTrace("cast_vote_trace")
         trace.start()
         return try {
-            val vote = mapOf(
+            val auth = FirebaseAuth.getInstance()
+            val user = auth.currentUser
+            val voterEmail = user?.email ?: voterUid
+
+            // 🔍 Fetch the poll so we can find the option text
+            val pollSnap = polls.document(pollId).get().await()
+            val pollData = pollSnap.data
+            val pollOptions = pollData?.get("options") as? List<Map<String, Any>> ?: emptyList()
+
+            // ✅ Match the optionId to its text
+            val optionText = pollOptions.find { it["id"] == optionId }?.get("text") as? String
+                ?: "Unknown option"
+
+            // 🧾 Build vote record
+            val voteData = hashMapOf(
                 "optionId" to optionId,
-                "createdAt" to System.currentTimeMillis()
+                "optionText" to optionText,
+                "createdAt" to System.currentTimeMillis(),
+                "anonymous" to anonymous,
+                "voterEmail" to if (anonymous) null else voterEmail
             )
+
+            // 📝 Store the vote (overwrites same voter if already voted)
             polls.document(pollId)
                 .collection("votes")
                 .document(voterUid)
-                .set(vote)
+                .set(voteData)
                 .await()
+
             trace.stop()
             OpResult.Success
-        } catch (e: Exception) {
+        }
+        catch (e: Exception) {
             trace.stop()
-            OpResult.Error(e.message ?: "Failed to cast vote")
+            Log.e(TAG, "Error casting vote: ${e.message}", e)
+
+            val customMessage = when {
+                e.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true ->
+                    "You’ve already voted on this poll."
+                else ->
+                    "Something went wrong while submitting your vote."
+            }
+
+            return OpResult.Error(customMessage)
+        }
+
+    }
+
+
+    // ---------- Admin reads votes ----------
+    suspend fun getVotesForPoll(pollId: String): List<Map<String, Any>> {
+        return try {
+            val snapshot = db.collection("polls")
+                .document(pollId)
+                .collection("votes")
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { it.data }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
@@ -248,7 +278,6 @@ class FirebasePollRepository(
     private fun DocumentSnapshot.toPoll(): Poll? {
         if (!exists()) return null
         val data = data ?: return null
-        val id = id
         val opts = (data["options"] as? List<*>)?.mapNotNull { raw ->
             val map = raw as? Map<*, *> ?: return@mapNotNull null
             val oid = map["id"] as? String ?: return@mapNotNull null
@@ -258,15 +287,13 @@ class FirebasePollRepository(
 
         return Poll(
             id = id,
-            title = (data["title"] as? String).orElseEmpty(),
-            description = (data["description"] as? String).orElseEmpty(),
+            title = (data["title"] as? String).orEmpty(),
+            description = (data["description"] as? String).orEmpty(),
             options = opts,
-            createdBy = (data["createdBy"] as? String).orElseEmpty(),
+            createdBy = (data["createdBy"] as? String).orEmpty(),
             createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
             closesAt = (data["closesAt"] as? Number)?.toLong(),
             isActive = (data["isActive"] as? Boolean) ?: true
         )
     }
-
-    private fun String?.orElseEmpty(): String = this ?: ""
 }

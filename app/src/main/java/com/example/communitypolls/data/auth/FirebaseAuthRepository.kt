@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.auth.userProfileChangeRequest
 
-
 class FirebaseAuthRepository(
     private val auth: FirebaseAuth,
     private val db: FirebaseFirestore
@@ -25,7 +24,6 @@ class FirebaseAuthRepository(
             if (fUser == null) {
                 trySend(null)
             } else {
-                // Load profile to get role/displayName; be resilient if profile missing
                 usersCol.document(fUser.uid).get()
                     .addOnSuccessListener { snap ->
                         val role = snap.getString("role")
@@ -47,10 +45,13 @@ class FirebaseAuthRepository(
     }
 
     override suspend fun signUp(email: String, password: String, displayName: String): AuthResult {
+        if (!isValidPassword(password)) {
+            return AuthResult.Error("Password must be at least 6 characters and include at least 1 uppercase letter and 1 number.")
+        }
+
         return try {
             val result = auth.createUserWithEmailAndPassword(email.trim(), password).await()
             val fUser = result.user ?: return AuthResult.Error("No Firebase user")
-            // Create profile doc with default role=user
             ensureUserProfile(fUser, role = "user", displayName = displayName)
             AuthResult.Success(AppUser(fUser.uid, fUser.email ?: "", displayName, "user"))
         } catch (e: Exception) {
@@ -62,7 +63,6 @@ class FirebaseAuthRepository(
         return try {
             val result = auth.signInWithEmailAndPassword(email.trim(), password).await()
             val fUser = result.user ?: return AuthResult.Error("No Firebase user")
-            // Ensure profile exists (do not overwrite role if present)
             ensureUserProfile(fUser, role = null, displayName = fUser.displayName ?: "")
             val prof = usersCol.document(fUser.uid).get().await()
             val role = prof.getString("role") ?: "user"
@@ -102,7 +102,6 @@ class FirebaseAuthRepository(
         }
     }
 
-
     override suspend fun refreshRole(): AppUser? {
         val fUser = auth.currentUser ?: return null
         val prof = usersCol.document(fUser.uid).get().await()
@@ -121,15 +120,17 @@ class FirebaseAuthRepository(
     }
 
     override suspend fun changePassword(newPassword: String) {
+        if (!isValidPassword(newPassword)) {
+            throw Exception("Password must be at least 6 characters and include at least 1 uppercase letter and 1 number.")
+        }
+
         val user = auth.currentUser ?: throw Exception("No authenticated user.")
         user.updatePassword(newPassword).await()
     }
 
-
     private suspend fun ensureUserProfile(fUser: FirebaseUser, role: String?, displayName: String) {
         val doc = usersCol.document(fUser.uid).get().await()
         if (doc.exists()) {
-            // Merge: fill displayName/email if missing; keep role unchanged unless a non-null role is provided
             val updates = hashMapOf<String, Any?>(
                 "email" to (fUser.email ?: ""),
                 "displayName" to displayName,
@@ -138,7 +139,6 @@ class FirebaseAuthRepository(
             if (role != null) updates["role"] = role
             usersCol.document(fUser.uid).set(updates, com.google.firebase.firestore.SetOptions.merge()).await()
         } else {
-            // Create new
             val data = hashMapOf(
                 "email" to (fUser.email ?: ""),
                 "displayName" to displayName,
@@ -147,5 +147,11 @@ class FirebaseAuthRepository(
             )
             usersCol.document(fUser.uid).set(data).await()
         }
+    }
+
+    private fun isValidPassword(password: String): Boolean {
+        val hasUppercase = password.any { it.isUpperCase() }
+        val hasDigit = password.any { it.isDigit() }
+        return password.length >= 6 && hasUppercase && hasDigit
     }
 }

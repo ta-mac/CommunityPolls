@@ -112,7 +112,9 @@ fun PollResultsRoute(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(r.label, style = MaterialTheme.typography.bodyLarge)
+                            val labelText = if (r.label.equals("Anonymous", true)) "Anonymous" else r.label
+                            Text(labelText, style = MaterialTheme.typography.bodyLarge)
+
                             Text(
                                 "${r.count}  (${(r.pct * 100).toInt()}%)",
                                 style = MaterialTheme.typography.labelMedium

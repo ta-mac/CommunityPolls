@@ -24,8 +24,24 @@ class AuthViewModel(
     private val _state = MutableStateFlow(AuthUiState())
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
+    private val _passwordStrength = MutableStateFlow("")
+    val passwordStrength: StateFlow<String> = _passwordStrength
+
+    fun validatePasswordInput(password: String) {
+        val issues = mutableListOf<String>()
+
+        if (password.length < 6) issues.add("At least 6 characters")
+        if (!password.any { it.isUpperCase() }) issues.add("1 uppercase letter")
+        if (!password.any { it.isDigit() }) issues.add("1 number")
+
+        _passwordStrength.value = if (issues.isEmpty()) {
+            "✅ Strong password"
+        } else {
+            "⚠ Missing: ${issues.joinToString(", ")}"
+        }
+    }
+
     init {
-        // Keep UI in sync with Firebase auth state
         viewModelScope.launch {
             repo.currentUser.collect { user ->
                 _state.value = _state.value.copy(
@@ -42,10 +58,7 @@ class AuthViewModel(
         when (val res = repo.signUp(email, password, name)) {
             is AuthResult.Success -> {
                 try {
-                    // 🔄 Update Firebase Auth profile immediately after sign-up
                     repo.updateDisplayName(name)
-
-                    // Refresh current user to reflect changes
                     res.user?.let {
                         _state.value = AuthUiState(user = it.copy(displayName = name))
                     } ?: run {
@@ -58,7 +71,6 @@ class AuthViewModel(
             is AuthResult.Error -> _state.value = _state.value.copy(loading = false, error = res.message)
         }
     }
-
 
     fun signIn(email: String, password: String) = viewModelScope.launch {
         _state.value = _state.value.copy(loading = true, error = null)
@@ -76,7 +88,6 @@ class AuthViewModel(
         }
     }
 
-    //New Feature to reset user password
     fun resetPassword(email: String) = viewModelScope.launch {
         _state.value = _state.value.copy(loading = true, error = null)
         when (val res = repo.resetPassword(email)) {
@@ -111,16 +122,14 @@ class AuthViewModel(
         }
     }
 
-
-
     fun signOut() {
         FirebaseAuth.getInstance().signOut()
 
-        // Emit auth state change so UI reacts automatically
-        _state.value = AuthUiState(
+        //Clear local app state so navigation recomposes
+        _state.value = _state.value.copy(
             user = null,
-            loading = false,
-            error = null
+            error = null,
+            loading = false
         )
     }
 

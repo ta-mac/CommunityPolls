@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +17,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.communitypolls.model.Poll
+import java.text.SimpleDateFormat
+import androidx.compose.foundation.shape.RoundedCornerShape
+
+import java.util.*
 
 @Composable
 fun PollListRoute(
@@ -28,7 +30,9 @@ fun PollListRoute(
     onEditPoll: (String) -> Unit = {},
     onDeletePoll: (String) -> Unit = {},
     onCreatePoll: (() -> Unit)? = null,
-    sort: PollSort = PollSort.NEWEST
+    sort: PollSort = PollSort.NEWEST,
+    searchQuery: String = "",
+    onViewVotes: (String, String) -> Unit = { _, _ -> } // NEW callback
 ) {
     val vm: PollListViewModel = viewModel(factory = PollVmFactory(limit))
     val state by vm.state.collectAsState()
@@ -41,11 +45,12 @@ fun PollListRoute(
         onEditPoll = onEditPoll,
         onDeletePoll = onDeletePoll,
         onCreatePoll = onCreatePoll,
-        sort = sort
+        sort = sort,
+        externalSearchQuery = searchQuery,
+        onViewVotes = onViewVotes // NEW
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PollListScreen(
     state: PollListUiState,
@@ -55,37 +60,43 @@ fun PollListScreen(
     onEditPoll: (String) -> Unit,
     onDeletePoll: (String) -> Unit,
     onCreatePoll: (() -> Unit)?,
-    sort: PollSort
+    sort: PollSort,
+    externalSearchQuery: String,
+    onViewVotes: (String, String) -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Polls", style = MaterialTheme.typography.titleLarge) }
-            )
-        }
-    ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            when {
-                state.loading -> LoadingState()
-                state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
-                state.items.isEmpty() -> EmptyState(onCreatePoll)
-                else -> {
-                    val itemsSorted = remember(state.items, sort) {
-                        when (sort) {
-                            PollSort.NEWEST   -> state.items.sortedByDescending { it.createdAt }
-                            PollSort.OLDEST   -> state.items.sortedBy { it.createdAt }
-                            PollSort.TITLE_AZ -> state.items.sortedBy { it.title.lowercase() }
-                            PollSort.TITLE_ZA -> state.items.sortedByDescending { it.title.lowercase() }
+    Box(modifier = Modifier.fillMaxSize()) {
+        when {
+            state.loading -> LoadingState()
+            state.error != null -> ErrorState(message = state.error!!, onRetry = onRetry)
+            state.items.isEmpty() -> EmptyState(onCreatePoll)
+            else -> {
+                val itemsSorted = remember(state.items, sort) {
+                    when (sort) {
+                        PollSort.NEWEST -> state.items.sortedByDescending { it.createdAt }
+                        PollSort.OLDEST -> state.items.sortedBy { it.createdAt }
+                        PollSort.TITLE_AZ -> state.items.sortedBy { it.title.lowercase() }
+                        PollSort.TITLE_ZA -> state.items.sortedByDescending { it.title.lowercase() }
+                    }
+                }
+                val filteredItems = remember(itemsSorted, externalSearchQuery) {
+                    if (externalSearchQuery.isBlank()) itemsSorted
+                    else {
+                        val q = externalSearchQuery.trim()
+                        itemsSorted.filter { poll ->
+                            poll.title.contains(q, ignoreCase = true) ||
+                                    poll.description.contains(q, ignoreCase = true)
                         }
                     }
-                    PollList(
-                        items = itemsSorted,
-                        onPollClick = onPollClick,
-                        showAdminActions = showAdminActions,
-                        onEditPoll = onEditPoll,
-                        onDeletePoll = onDeletePoll
-                    )
                 }
+
+                PollList(
+                    items = filteredItems,
+                    onPollClick = onPollClick,
+                    showAdminActions = showAdminActions,
+                    onEditPoll = onEditPoll,
+                    onDeletePoll = onDeletePoll,
+                    onViewVotes = onViewVotes // pass callback
+                )
             }
         }
     }
@@ -97,11 +108,13 @@ private fun PollList(
     onPollClick: (String) -> Unit,
     showAdminActions: Boolean,
     onEditPoll: (String) -> Unit,
-    onDeletePoll: (String) -> Unit
-) {
+    onDeletePoll: (String) -> Unit,
+    onViewVotes: (String, String) -> Unit
+)
+{
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(12.dp),
+        contentPadding = PaddingValues(bottom = 100.dp, start = 12.dp, end = 12.dp, top = 4.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(items, key = { it.id }) { poll ->
@@ -110,7 +123,8 @@ private fun PollList(
                 onClick = { onPollClick(poll.id) },
                 showAdminActions = showAdminActions,
                 onEdit = { onEditPoll(poll.id) },
-                onDelete = { onDeletePoll(poll.id) }
+                onDelete = { onDeletePoll(poll.id) },
+                onViewVotes = onViewVotes
             )
         }
     }
@@ -122,11 +136,14 @@ private fun PollItemCard(
     onClick: () -> Unit,
     showAdminActions: Boolean,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onViewVotes: (String, String) -> Unit
 ) {
-    val subtitle = poll.description.ifBlank { "No description" }
-    val optionsSummary = "${poll.options.size} option${if (poll.options.size == 1) "" else "s"}"
-    val statusText = if (poll.isActive) "Active" else "Closed"
+    val now = System.currentTimeMillis()
+    val isActive = poll.isActive && (poll.closesAt == null || poll.closesAt > now)
+    val statusColor = if (isActive) Color(0xFF22C55E) else Color(0xFFF44336)
+    val statusText = if (isActive) "Active" else "Closed"
+    val optionsText = "${poll.options.size} option${if (poll.options.size == 1) "" else "s"}"
 
     Card(
         modifier = Modifier
@@ -136,24 +153,20 @@ private fun PollItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                Text(
-                    poll.title.ifBlank { "(Untitled poll)" },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            // Title
+            Text(
+                poll.title.ifBlank { "(Untitled poll)" },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Spacer(Modifier.height(6.dp))
 
+            // Description
             Text(
-                subtitle,
+                poll.description.ifBlank { "No description" },
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
@@ -161,29 +174,81 @@ private fun PollItemCard(
 
             Spacer(Modifier.height(10.dp))
 
+            // Status row
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StatusDot(color = if (poll.isActive) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline)
+                StatusDot(color = statusColor)
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    "$statusText • $optionsSummary",
+                    text = "$statusText • $optionsText",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = statusColor
                 )
+
+                poll.closesAt?.let { closeMillis ->
+                    val sdf = remember {
+                        SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+                    }
+                    val formatted = sdf.format(Date(closeMillis))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Closes: $formatted",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
+            // Buttons (compact + accent highlight for "View Votes")
             if (showAdminActions) {
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 36.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) { Text("Edit") }
-                    OutlinedButton(onClick = onDelete, modifier = Modifier.weight(1f)) { Text("Delete") }
+                    val buttonModifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                    val textStyle = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = MaterialTheme.typography.bodySmall.fontSize
+                    )
+
+                    OutlinedButton(
+                        onClick = onEdit,
+                        modifier = buttonModifier,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(50)
+                    ) { Text("Edit", style = textStyle) }
+
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = buttonModifier,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(50)
+                    ) { Text("Delete", style = textStyle) }
+
+                    // Accent "View Votes" button
+                    Button(
+                        onClick = { onViewVotes(poll.id, poll.title) },
+                        modifier = buttonModifier,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Text("View Votes", style = textStyle)
+                    }
                 }
             }
         }
     }
 }
+
 
 @Composable
 private fun StatusDot(color: Color, size: Dp = 10.dp) {
@@ -198,7 +263,9 @@ private fun StatusDot(color: Color, size: Dp = 10.dp) {
 @Composable
 fun LoadingState() {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -211,7 +278,9 @@ fun LoadingState() {
 @Composable
 fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -222,14 +291,18 @@ fun ErrorState(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun EmptyState(onCreatePoll: (() -> Unit)?) {
+fun EmptyState(onCreatePoll: (() -> Unit)?) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp),
             shape = MaterialTheme.shapes.extraLarge
         ) {
             Column(
@@ -238,7 +311,7 @@ private fun EmptyState(onCreatePoll: (() -> Unit)?) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text("🗒️", style = MaterialTheme.typography.headlineLarge)
-                Text("No polls yet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text("No polls yet", style = MaterialTheme.typography.titleLarge)
                 Text("Create your first poll to get started!", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(12.dp))
                 if (onCreatePoll != null) {
@@ -248,3 +321,4 @@ private fun EmptyState(onCreatePoll: (() -> Unit)?) {
         }
     }
 }
+

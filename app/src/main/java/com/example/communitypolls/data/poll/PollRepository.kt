@@ -56,10 +56,14 @@ interface PollRepository {
     /** Delete a poll (admin-only via security rules). */
     suspend fun deletePoll(pollId: String): OpResult
 
-    /** Cast a vote to /polls/{pollId}/votes/{uid}. */
+    /**
+     * Cast a vote to /polls/{pollId}/votes/{uid}.
+     * @param anonymous whether to mark this vote as anonymous in Firestore.
+     */
     suspend fun castVote(
         pollId: String,
         optionId: String,
-        voterUid: String
+        voterUid: String,
+        anonymous: Boolean = false
     ): OpResult
 }
